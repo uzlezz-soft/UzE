@@ -1,6 +1,6 @@
 #pragma once
 
-namespace UzE
+namespace uze
 {
 
 	void EntryPoint();

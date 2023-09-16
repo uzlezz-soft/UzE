@@ -1,11 +1,11 @@
 #include <iostream>
-#include "UzE/Engine.h"
+#include "uze/engine.h"
 
 int main()
 {
 	std::cout << "Editor Hello World!\n";
 
-	UzE::EntryPoint();
+	uze::EntryPoint();
 
 	return 0;
 }
