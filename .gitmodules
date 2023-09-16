@@ -10,3 +10,6 @@
 [submodule "third-party/sdl"]
 	path = third-party/sdl
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "third-party/uzlezz_language"]
+	path = third-party/uzlezz_language
+	url = https://github.com/uzlezz-soft/UzlezzLanguage.git
