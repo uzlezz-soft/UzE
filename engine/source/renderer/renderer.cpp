@@ -1,11 +1,12 @@
 #include "uze/renderer/renderer.h"
 
 #include <iomanip>
+#include <iostream>
+#include <sstream>
 
 #include "glad/gles3.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
-#include <iostream>
 
 #include "SDL3_mixer/SDL_mixer.h"
 
@@ -64,13 +65,27 @@ namespace uze
 
 		m_valid = true;
 
+		i32 numTextureUnits = 0;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &numTextureUnits);
+
 		GLint major, minor;
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
-		std::cout << std::setw(34) << std::left << "OpenGLES " << major << "." << MIX_FADING_OUT << "\n";
+
+		m_caps.gl_version_major = major;
+		m_caps.gl_version_minor = minor;
+		{
+			std::stringstream ss;
+			ss << major << minor << "0 es";
+			m_caps.shading_language_version = ss.str();
+		}
+
+		std::cout << std::setw(34) << std::left << "OpenGLES " << major << "." << minor << "\n";
 		std::cout << std::setw(34) << std::left << "OpenGL Shading Language Version: " << (char*)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 		std::cout << std::setw(34) << std::left << "OpenGL Vendor:" << (char*)glGetString(GL_VENDOR) << std::endl;
 		std::cout << std::setw(34) << std::left << "OpenGL Renderer:" << (char*)glGetString(GL_RENDERER) << std::endl;
+
+		std::cout << std::setw(34) << std::left << "Num of available texture units: " << numTextureUnits << "\n";
 	}
 
 	Renderer::~Renderer()
@@ -97,4 +112,8 @@ namespace uze
 		SDL_GL_SwapWindow(m_window);
 	}
 
+	std::shared_ptr<Shader> Renderer::createShader(const ShaderSpecification& spec)
+	{
+		return std::shared_ptr<Shader>(new Shader(spec, *this));
+	}
 }

@@ -24,11 +24,12 @@ namespace uze
 		std::string_view getFragmentSource() const override { return fragment_source; }
 	};
 
+	class Renderer;
+
 	class Shader final : public NonCopyable<Shader>
 	{
 	public:
 
-		Shader(const ShaderSpecification& spec);
 		~Shader();
 
 		bool isValid() const { return m_handle; }
@@ -36,6 +37,10 @@ namespace uze
 	private:
 
 		u32 m_handle{ 0 };
+
+		Shader(const ShaderSpecification& spec, Renderer& renderer);
+
+		friend class Renderer;
 	};
 
 }

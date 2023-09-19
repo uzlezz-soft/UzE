@@ -41,7 +41,7 @@ namespace uze
 
 		std::cout << SDL_GetPlatform() << "\n";
 
-		RawShaderSpecification spec(R"(#version 300 es
+		RawShaderSpecification spec(R"(
 		precision mediump float;
 		
 		layout (location = 0) in vec2 a_Position;
@@ -55,7 +55,7 @@ namespace uze
 		}
 )",
 
-		R"(#version 300 es
+		R"(
 		precision mediump float;
 		
 		out vec4 Color;
@@ -67,7 +67,7 @@ namespace uze
 			Color = vec4(Position, 0.0, 1.0);
 		}
 )");
-		Shader shader(spec);
+		auto shader = renderer.createShader(spec);
 
 		//Sound sound("C:/Users/User/Music/Soundpad/bigmak.wav");
 		//sound.Play();
