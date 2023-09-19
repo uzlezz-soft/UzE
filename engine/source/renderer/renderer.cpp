@@ -10,6 +10,10 @@
 
 #include "SDL3_mixer/SDL_mixer.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 namespace uze
 {
 

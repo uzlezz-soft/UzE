@@ -6,6 +6,9 @@
 #include <entt/entt.hpp>
 #include <iostream>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 namespace uze
 {
@@ -30,10 +33,16 @@ namespace uze
 		}
 	};
 
+	std::unique_ptr<Renderer> renderer;
+	std::shared_ptr<Shader> shader;
+	bool quit = false;
+
+	static void gameLoop();
+
 	void EntryPoint()
 	{
-		Renderer renderer;
-		if (!renderer.isValid())
+		renderer = std::make_unique<Renderer>();
+		if (!renderer->isValid())
 		{
 			std::cerr << "Cannot init renderer\n";
 			return;
@@ -67,26 +76,38 @@ namespace uze
 			Color = vec4(Position, 0.0, 1.0);
 		}
 )");
-		auto shader = renderer.createShader(spec);
+		shader = renderer->createShader(spec);
 
 		//Sound sound("C:/Users/User/Music/Soundpad/bigmak.wav");
 		//sound.Play();
 
-		bool quit = false;
+#if !defined(__EMSCRIPTEN__)
 		while (!quit)
 		{
-			SDL_Event e;
-			while (SDL_PollEvent(&e) != 0)
-			{
-				if (e.type == SDL_EVENT_QUIT)
-					quit = true;
-			}
+			gameLoop();
+		}
+#else
+		emscripten_set_main_loop(gameLoop, 0, 1);
+#endif
+	}
 
-			renderer.beginFrame();
-			renderer.clear(1.f, 1.f, 1.f, 1.f);
-			renderer.endFrame();
+	static void gameLoop()
+	{
+		SDL_Event e;
+		while (SDL_PollEvent(&e) != 0)
+		{
+			if (e.type == SDL_EVENT_QUIT)
+			{
+				quit = true;
+#if defined(__EMSCRIPTEN__)
+				emscripten_cancel_main_loop();
+#endif
+			}
 		}
 
+		renderer->beginFrame();
+		renderer->clear(1.f, 1.f, 1.f, 1.f);
+		renderer->endFrame();
 	}
 	
 }
