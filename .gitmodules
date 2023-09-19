@@ -13,3 +13,9 @@
 [submodule "third-party/uzlezz_language"]
 	path = third-party/uzlezz_language
 	url = https://github.com/uzlezz-soft/UzlezzLanguage.git
+[submodule "third-party/entt"]
+	path = third-party/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "third-party/glm"]
+	path = third-party/glm
+	url = https://github.com/g-truc/glm.git
