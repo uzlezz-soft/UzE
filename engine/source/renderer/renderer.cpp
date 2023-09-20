@@ -119,7 +119,7 @@ void main()
 
 		std::stringstream frag_ss;
 		frag_ss << R"(
-precision mediump float;
+precision highp float;
 
 out vec4 out_color;
 

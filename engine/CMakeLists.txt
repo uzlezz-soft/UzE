@@ -91,7 +91,7 @@ if(NOT entt_FOUND)
     set_property(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_deps/entt-src" PROPERTY EXCLUDE_FROM_ALL TRUE)
 endif()
 
-add_library(Engine STATIC "source/engine.cpp" "include/uze/engine.h" "source/renderer/glad/gles3.h" "source/renderer/glad/gles3.cpp" "include/uze/renderer/shader.h" "include/uze/common.h" "source/renderer/shader.cpp" "include/uze/renderer/renderer.h" "source/renderer/renderer.cpp")
+add_library(Engine STATIC "source/engine.cpp" "include/uze/engine.h" "source/renderer/glad/gles3.h" "source/renderer/glad/gles3.cpp" "include/uze/renderer/shader.h" "include/uze/common.h" "source/renderer/shader.cpp" "include/uze/renderer/renderer.h" "source/renderer/renderer.cpp" "include/uze/renderer/buffer.h" "source/renderer/buffer.cpp")
 
 target_include_directories(Engine PUBLIC include)
 #target_include_directories(Engine PUBLIC "${CMAKE_SOURCE_DIR}/third-party/uzlezz_language/code/include")

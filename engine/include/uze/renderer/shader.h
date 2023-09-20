@@ -11,6 +11,8 @@ namespace uze
 	{
 		virtual std::string_view getVertexSource() const = 0;
 		virtual std::string_view getFragmentSource() const = 0;
+
+		virtual ~ShaderSpecification() = default;
 	};
 
 	struct RawShaderSpecification final : public ShaderSpecification
