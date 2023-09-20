@@ -1,6 +1,8 @@
 #pragma once
 
 #include "uze/renderer/shader.h"
+#include "uze/renderer/buffer.h"
+#include "uze/renderer/vertex_array.h"
 #include <string>
 
 struct SDL_Window;
@@ -33,8 +35,12 @@ namespace uze
 		const RenderingCapabilities& getCapabilities() const { return m_caps; }
 
 		void bindShader(const Shader& shader);
+		void draw(const VertexArray& vertex_array, u32 num_indices);
 
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
+		std::shared_ptr<VertexBuffer> createVertexBuffer(const BufferSpecification& spec);
+		std::shared_ptr<IndexBuffer> createIndexBuffer(const BufferSpecification& spec);
+		std::unique_ptr<VertexArrayBuilder> createVertexArrayBuilder() const;
 
 	private:
 

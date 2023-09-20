@@ -8,6 +8,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
 
+#include "uze/renderer/vertex_array.h"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -164,7 +166,7 @@ void main()
 
 	void Renderer::beginFrame()
 	{
-		
+		bindShader(*m_batch_shader);
 	}
 
 	void Renderer::endFrame()
@@ -177,8 +179,29 @@ void main()
 		glUseProgram(shader.m_handle);
 	}
 
+	void Renderer::draw(const VertexArray& vertex_array, u32 num_indices)
+	{
+		glBindVertexArray(vertex_array.m_handle);
+		glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
+	}
+
 	std::shared_ptr<Shader> Renderer::createShader(const ShaderSpecification& spec)
 	{
 		return std::shared_ptr<Shader>(new Shader(spec, *this));
+	}
+
+	std::shared_ptr<VertexBuffer> Renderer::createVertexBuffer(const BufferSpecification& spec)
+	{
+		return std::shared_ptr<VertexBuffer>(new VertexBuffer(spec));
+	}
+
+	std::shared_ptr<IndexBuffer> Renderer::createIndexBuffer(const BufferSpecification& spec)
+	{
+		return std::shared_ptr<IndexBuffer>(new IndexBuffer(spec));
+	}
+
+	std::unique_ptr<VertexArrayBuilder> Renderer::createVertexArrayBuilder() const
+	{
+		return std::unique_ptr<VertexArrayBuilder>(new VertexArrayBuilder());
 	}
 }

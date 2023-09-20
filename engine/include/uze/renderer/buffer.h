@@ -13,7 +13,7 @@ namespace uze
 		bool normalized;
 	};
 
-	struct VertexBufferLayout final
+	struct VertexLayout final
 	{
 		template <class T>
 		void push(u32 count)
@@ -58,7 +58,7 @@ namespace uze
 		u32 m_stride{ 0 };
 	};
 
-	struct VertexBufferSpecification final
+	struct BufferSpecification final
 	{
 		bool dynamic = false;
 		u32 size{ 0 };
@@ -81,13 +81,38 @@ namespace uze
 		u32 m_usage{ 0 };
 		u32 m_size{ 0 };
 
-		VertexBuffer(const VertexBufferSpecification& spec);
+		VertexBuffer(const BufferSpecification& spec);
 
 		void bind();
 		bool isBound() const;
 
 		friend class Renderer;
-		friend class VertexArray;
+		friend class VertexArrayBuilder;
+	};
+
+	class IndexBuffer final : NonCopyable<IndexBuffer>
+	{
+	public:
+
+		~IndexBuffer();
+
+		void updateData(const u32* data, i64 size, i64 offset = 0);
+		u32 getCount() const { return m_count; }
+
+	private:
+
+		u32 m_handle{ 0 };
+		u32 m_usage{ 0 };
+		u32 m_count{ 0 };
+
+		IndexBuffer(const BufferSpecification& spec);
+
+		void bind();
+		bool isBound() const;
+
+		friend class Renderer;
+		friend class VertexArrayBuilder;
+
 	};
 
 }

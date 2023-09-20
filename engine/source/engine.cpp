@@ -35,6 +35,9 @@ namespace uze
 
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<Shader> shader;
+	std::shared_ptr<VertexBuffer> vertex_buffer;
+	std::shared_ptr<IndexBuffer> index_buffer;
+	std::shared_ptr<VertexArray> vertex_array;
 	bool quit = false;
 
 	static void gameLoop();
@@ -78,6 +81,44 @@ namespace uze
 )");
 		shader = renderer->createShader(spec);
 
+		std::array<float, 8> vertices =
+		{
+			-0.5f, -0.5f,
+			0.5f, -0.5f,
+			0.5f, 0.5f,
+			-0.5f, 0.5f
+		};
+
+		std::array<u32, 6> indices =
+		{
+			0, 1, 2,
+			2, 3, 0
+		};
+
+		{
+			BufferSpecification vertex_buffer_spec;
+			vertex_buffer_spec.data = vertices.data();
+			vertex_buffer_spec.size = vertices.size() * sizeof(float);
+			vertex_buffer = renderer->createVertexBuffer(vertex_buffer_spec);
+		}
+
+		{
+			BufferSpecification index_buffer_spec;
+			index_buffer_spec.data = indices.data();
+			index_buffer_spec.size = indices.size() * sizeof(u32);
+			index_buffer = renderer->createIndexBuffer(index_buffer_spec);
+		}
+
+		{
+			VertexLayout vertex_buffer_layout;
+			vertex_buffer_layout.push<float>(2);
+
+			vertex_array = renderer->createVertexArrayBuilder()
+				->addVertexBuffer(vertex_buffer, vertex_buffer_layout)
+				.setIndexBuffer(index_buffer)
+				.build();
+		}
+
 		//Sound sound("C:/Users/User/Music/Soundpad/bigmak.wav");
 		//sound.Play();
 
@@ -107,6 +148,8 @@ namespace uze
 
 		renderer->beginFrame();
 		renderer->clear(1.f, 1.f, 1.f, 1.f);
+		renderer->bindShader(*shader);
+		renderer->draw(*vertex_array, 6);
 		renderer->endFrame();
 	}
 	
