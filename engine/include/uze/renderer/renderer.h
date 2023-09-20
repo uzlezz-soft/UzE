@@ -13,6 +13,7 @@ namespace uze
 		u32 gl_version_major;
 		u32 gl_version_minor;
 		std::string shading_language_version = "100 es";
+		u32 num_texture_units;
 	};
 
 	class Renderer final : NonCopyable<Renderer>
@@ -30,6 +31,8 @@ namespace uze
 		void endFrame();
 
 		const RenderingCapabilities& getCapabilities() const { return m_caps; }
+
+		void bindShader(const Shader& shader);
 
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
 

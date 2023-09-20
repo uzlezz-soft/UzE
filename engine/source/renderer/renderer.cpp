@@ -8,8 +8,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
 
-#include "SDL3_mixer/SDL_mixer.h"
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -69,8 +67,8 @@ namespace uze
 
 		m_valid = true;
 
-		i32 numTextureUnits = 0;
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &numTextureUnits);
+		i32 num_texture_units = 0;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &num_texture_units);
 
 		GLint major, minor;
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -83,13 +81,71 @@ namespace uze
 			ss << major << minor << "0 es";
 			m_caps.shading_language_version = ss.str();
 		}
+		m_caps.num_texture_units = num_texture_units;
 
 		std::cout << std::setw(34) << std::left << "OpenGLES " << major << "." << minor << "\n";
 		std::cout << std::setw(34) << std::left << "OpenGL Shading Language Version: " << (char*)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 		std::cout << std::setw(34) << std::left << "OpenGL Vendor:" << (char*)glGetString(GL_VENDOR) << std::endl;
 		std::cout << std::setw(34) << std::left << "OpenGL Renderer:" << (char*)glGetString(GL_RENDERER) << std::endl;
 
-		std::cout << std::setw(34) << std::left << "Num of available texture units: " << numTextureUnits << "\n";
+		std::cout << std::setw(34) << std::left << "Num of available texture units: " << num_texture_units << "\n";
+
+		const auto default_vert_source = R"(
+precision mediump float;
+
+layout (location = 0) in vec4 a_position_tex_index_tiling;
+layout (location = 1) in vec4 a_color;
+layout (location = 2) in vec2 a_tex_coord;
+
+layout (std140) uniform CameraData
+{
+	mat4 view_projection;
+};
+
+out vec4 color;
+out vec2 tex_coord;
+out float tex_index;
+out float tiling;
+
+void main()
+{
+	gl_Position = view_projection * vec4(a_position_tex_index_tiling.xy, 0.0, 1.0);
+	color = a_color;
+	tex_coord = a_tex_coord;
+	tex_index = a_position_tex_index_tiling.z;
+	tiling = a_position_tex_index_tiling.w;
+}
+		)";
+
+		std::stringstream frag_ss;
+		frag_ss << R"(
+precision mediump float;
+
+out vec4 out_color;
+
+in vec4 color;
+in vec2 tex_coord;
+in float tex_index;
+in float tiling;
+
+uniform sampler2D u_textures[)";
+		frag_ss << m_caps.num_texture_units;
+		frag_ss << R"(];
+void main()
+{
+	vec4 color = color;
+	switch (int(tex_index))
+	{
+)";
+		for (u32 i = 0; i < m_caps.num_texture_units; ++i)
+		{
+			frag_ss << "		case " << i << ": color *= texture(u_textures[" << i << "], tex_coord * tiling); break;\n";
+		}
+		frag_ss << "	}\n	out_color = color;\n}";
+
+		auto default_frag_src = frag_ss.str();
+		RawShaderSpecification spec(default_vert_source, default_frag_src);
+		m_batch_shader = std::unique_ptr<Shader>(new Shader(spec, *this));
 	}
 
 	Renderer::~Renderer()
@@ -114,6 +170,11 @@ namespace uze
 	void Renderer::endFrame()
 	{
 		SDL_GL_SwapWindow(m_window);
+	}
+
+	void Renderer::bindShader(const Shader& shader)
+	{
+		glUseProgram(shader.m_handle);
 	}
 
 	std::shared_ptr<Shader> Renderer::createShader(const ShaderSpecification& spec)

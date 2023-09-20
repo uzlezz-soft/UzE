@@ -14,7 +14,7 @@ namespace uze
 	{
 		const u32 id = glCreateShader(type);
 		std::stringstream ss;
-		ss << "#version " << renderer.getCapabilities().shading_language_version << "\n" << source;
+		ss << "#version " << renderer.getCapabilities().shading_language_version << "\n#line 1\n" << source;
 		auto src = ss.str();
 		const char* c_src = src.data();
 		glShaderSource(id, 1, &c_src, nullptr);
