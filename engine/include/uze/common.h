@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <chrono>
 
 namespace uze
 {
@@ -32,6 +33,23 @@ namespace uze
 		AtScopeExit(std::function<void()>&& func)
 			: m_func(func) {}
 		~AtScopeExit() { m_func(); }
+	};
+
+	struct Stopwatch final
+	{
+		Stopwatch() { reset(); }
+
+		void reset() { m_start = std::chrono::high_resolution_clock::now(); }
+		double getElapsedSeconds() const { return getElapsedMilliseconds() * 0.001; }
+		double getElapsedMilliseconds() const
+		{
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::high_resolution_clock::now() - m_start).count() * 0.001 * 0.001;
+		}
+
+	private:
+
+		std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
 	};
 
 }

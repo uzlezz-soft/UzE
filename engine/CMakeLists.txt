@@ -9,8 +9,8 @@ if(SDL3_FOUND)
 endif()
 
 # 2. Try using a vendored SDL library
-if(NOT SDL3_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/third-party/sdl/CMakeLists.txt")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/third-party/sdl ${CMAKE_SOURCE_DIR}/third-party/sdl/out EXCLUDE_FROM_ALL)
+if(NOT SDL3_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl/CMakeLists.txt")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl ${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl/out EXCLUDE_FROM_ALL)
     message(STATUS "Using SDL3 via add_subdirectory")
     set(SDL3_FOUND TRUE)
 endif()
@@ -39,8 +39,8 @@ if(SDL3MIXER_FOUND)
 endif()
 
 # 2. Try using a vendored SDL library
-if(NOT SDL3MIXER_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/third-party/sdl_mixer/CMakeLists.txt")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/third-party/sdl_mixer ${CMAKE_SOURCE_DIR}/third-party/sdl_mixer/out EXCLUDE_FROM_ALL)
+if(NOT SDL3MIXER_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl_mixer/CMakeLists.txt")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl_mixer ${CMAKE_CURRENT_SOURCE_DIR}/../third-party/sdl_mixer/out EXCLUDE_FROM_ALL)
     message(STATUS "Using SDL3_mixer via add_subdirectory")
     set(SDL3MIXER_FOUND TRUE)
 endif()
@@ -71,8 +71,8 @@ if(entt_FOUND)
     message(STATUS "Using entt via find_package")
 endif()
 
-if(NOT entt_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/third-party/entt/CMakeLists.txt")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/third-party/entt ${CMAKE_SOURCE_DIR}/third-party/entt/out EXCLUDE_FROM_ALL)
+if(NOT entt_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/entt/CMakeLists.txt")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third-party/entt ${CMAKE_CURRENT_SOURCE_DIR}/../third-party/entt/out EXCLUDE_FROM_ALL)
     message(STATUS "Using entt via add_subdirectory")
     set(entt_FOUND TRUE)
 endif()
@@ -91,10 +91,14 @@ if(NOT entt_FOUND)
     set_property(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_deps/entt-src" PROPERTY EXCLUDE_FROM_ALL TRUE)
 endif()
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third-party/glm ${CMAKE_CURRENT_SOURCE_DIR}/../third-party/glm/out)
+message(STATUS "Using glm via add_subdirectory")
+
 add_library(Engine STATIC "source/engine.cpp" "include/uze/engine.h" "source/renderer/glad/gles3.h" "source/renderer/glad/gles3.cpp" "include/uze/renderer/shader.h" "include/uze/common.h" "source/renderer/shader.cpp" "include/uze/renderer/renderer.h" "source/renderer/renderer.cpp" "include/uze/renderer/buffer.h" "source/renderer/buffer.cpp" "include/uze/renderer/vertex_array.h" "source/renderer/vertex_array.cpp")
 
 target_include_directories(Engine PUBLIC include)
 #target_include_directories(Engine PUBLIC "${CMAKE_SOURCE_DIR}/third-party/uzlezz_language/code/include")
+target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/glm")
 
 target_link_libraries(Engine PRIVATE SDL3::SDL3)
 target_link_libraries(Engine PRIVATE SDL3_mixer::SDL3_mixer)

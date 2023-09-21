@@ -32,8 +32,8 @@ namespace uze
 			glDeleteVertexArrays(1, &m_handle);
 	}
 
-	VertexArray::VertexArray(u32 handle, std::vector<std::shared_ptr<VertexBuffer>> vertex_buffers,
-		std::shared_ptr<IndexBuffer> index_buffer)
+	VertexArray::VertexArray(u32 handle, const std::vector<std::shared_ptr<VertexBuffer>>& vertex_buffers,
+		const std::shared_ptr<IndexBuffer>& index_buffer)
 			: m_handle(handle), m_vertex_buffers(vertex_buffers), m_index_buffer(index_buffer)
 	{
 	}
@@ -70,6 +70,7 @@ namespace uze
 	std::shared_ptr<VertexArray> VertexArrayBuilder::build()
 	{
 		auto vertex_array = std::shared_ptr<VertexArray>(new VertexArray(m_handle, m_vertex_buffers, m_index_buffer));
+		m_handle = 0;
 		reset();
 		return vertex_array;
 	}
@@ -77,7 +78,7 @@ namespace uze
 	void VertexArrayBuilder::reset()
 	{
 		if (m_handle)
-			glDeleteBuffers(1, &m_handle);
+			glDeleteVertexArrays(1, &m_handle);
 
 		glGenBuffers(1, &m_handle);
 		m_attribute_index = 0;

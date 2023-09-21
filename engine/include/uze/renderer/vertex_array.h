@@ -20,8 +20,8 @@ namespace uze
 		std::vector<std::shared_ptr<VertexBuffer>> m_vertex_buffers{ nullptr };
 		std::shared_ptr<IndexBuffer> m_index_buffer{ nullptr };
 
-		VertexArray(u32 handle, std::vector<std::shared_ptr<VertexBuffer>> vertex_buffers,
-			std::shared_ptr<IndexBuffer> index_buffer);
+		VertexArray(u32 handle, const std::vector<std::shared_ptr<VertexBuffer>>& vertex_buffers,
+			const std::shared_ptr<IndexBuffer>& index_buffer);
 
 		friend class VertexArrayBuilder;
 		friend class Renderer;
@@ -41,8 +41,8 @@ namespace uze
 
 		u32 m_handle{ 0 };
 		u32 m_attribute_index{ 0 };
-		std::vector<std::shared_ptr<VertexBuffer>> m_vertex_buffers{ nullptr };
-		std::shared_ptr<IndexBuffer> m_index_buffer{ nullptr };
+		std::vector<std::shared_ptr<VertexBuffer>> m_vertex_buffers;
+		std::shared_ptr<IndexBuffer> m_index_buffer;
 
 		VertexArrayBuilder();
 		void reset();

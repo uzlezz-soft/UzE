@@ -2,6 +2,8 @@
 
 #include "uze/common.h"
 #include <vector>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace uze
 {
@@ -16,37 +18,57 @@ namespace uze
 	struct VertexLayout final
 	{
 		template <class T>
-		void push(u32 count)
+		VertexLayout& push(u32 count)
 		{
-			static_assert(false);
+			return *this;
 		}
 
 		template <>
-		void push<float>(u32 count)
+		VertexLayout& push<float>(u32 count)
 		{
 			m_elements.push_back({ count, 0x1406, false });
 			m_stride += sizeof(float) * count;
+			return *this;
 		}
 
 		template <>
-		void push<i32>(u32 count)
+		VertexLayout& push<i32>(u32 count)
 		{
 			m_elements.push_back({ count, 0x1404, false });
 			m_stride += sizeof(i32) * count;
+			return *this;
 		}
 
 		template <>
-		void push<u32>(u32 count)
+		VertexLayout& push<u32>(u32 count)
 		{
 			m_elements.push_back({ count, 0x1405, false });
 			m_stride += sizeof(u32) * count;
+			return *this;
 		}
 
 		template <>
-		void push<u8>(u32 count)
+		VertexLayout& push<u8>(u32 count)
 		{
 			m_elements.push_back({ count, 0x1401, true });
 			m_stride += sizeof(u8) * count;
+			return *this;
+		}
+
+		template <>
+		VertexLayout& push<glm::vec2>(u32 count)
+		{
+			for (u32 i = 0; i < count; ++i)
+				push<float>(2);
+			return *this;
+		}
+
+		template <>
+		VertexLayout& push<glm::vec4>(u32 count)
+		{
+			for (u32 i = 0; i < count; ++i)
+				push<float>(4);
+			return *this;
 		}
 
 		u32 getStride() const { return m_stride; }

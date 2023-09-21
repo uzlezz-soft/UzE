@@ -6,6 +6,8 @@
 #include <entt/entt.hpp>
 #include <iostream>
 
+#include "glm/ext/matrix_transform.hpp"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -117,6 +119,8 @@ namespace uze
 				->addVertexBuffer(vertex_buffer, vertex_buffer_layout)
 				.setIndexBuffer(index_buffer)
 				.build();
+
+			std::cout << "Frame took: 0ms";
 		}
 
 		//Sound sound("C:/Users/User/Music/Soundpad/bigmak.wav");
@@ -149,8 +153,15 @@ namespace uze
 		renderer->beginFrame();
 		renderer->clear(1.f, 1.f, 1.f, 1.f);
 		renderer->bindShader(*shader);
-		renderer->draw(*vertex_array, 6);
+		//renderer->draw(*vertex_array);
+		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
 		renderer->endFrame();
+
+		std::printf("\r                                                                                       \r");
+		std::cout << "Frame took: " << renderer->getStatistics().frame_time_ms
+			<< "ms; draw calls: " << renderer->getStatistics().num_draw_calls
+			<< "; num quads: " << renderer->getStatistics().num_quads;
 	}
 	
 }

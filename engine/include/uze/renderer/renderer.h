@@ -4,6 +4,7 @@
 #include "uze/renderer/buffer.h"
 #include "uze/renderer/vertex_array.h"
 #include <string>
+#include "glm/glm.hpp"
 
 struct SDL_Window;
 
@@ -18,6 +19,27 @@ namespace uze
 		u32 num_texture_units;
 	};
 
+	struct RendererStatistics final
+	{
+		double frame_time_ms{ 0.0 };
+		u32 num_vertices{ 0 };
+		u32 num_quads{ 0 };
+		u32 num_draw_calls{ 0 };
+
+		void reset()
+		{
+			std::memset(this, 0, sizeof(RendererStatistics));
+			m_start.reset();
+		}
+
+	private:
+
+		Stopwatch m_start;
+
+		friend class Renderer;
+	};
+
+	struct BatchData;
 	class Renderer final : NonCopyable<Renderer>
 	{
 	public:
@@ -33,9 +55,12 @@ namespace uze
 		void endFrame();
 
 		const RenderingCapabilities& getCapabilities() const { return m_caps; }
+		const RendererStatistics& getStatistics() const { return m_stats; }
 
 		void bindShader(const Shader& shader);
-		void draw(const VertexArray& vertex_array, u32 num_indices);
+		void draw(const VertexArray& vertex_array);
+		void draw(const VertexArray& vertex_array, i32 num_indices);
+		void drawQuad(const glm::mat4& transform, const glm::vec4& color);
 
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
 		std::shared_ptr<VertexBuffer> createVertexBuffer(const BufferSpecification& spec);
@@ -48,8 +73,13 @@ namespace uze
 		void* m_gl_context{ nullptr };
 		bool m_valid{ false };
 		RenderingCapabilities m_caps;
+		RendererStatistics m_stats;
 
-		std::unique_ptr<Shader> m_batch_shader{ nullptr };
+		std::unique_ptr<BatchData> m_batch_data{ nullptr };
+
+		void startBatch();
+		void endBatch();
+		void nextBatch();
 
 	};
 
