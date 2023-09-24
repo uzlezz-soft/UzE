@@ -215,6 +215,8 @@ void main()
 
 
 
+		auto quad_vao_builder = createVertexArrayBuilder();
+
 		BufferSpecification vertex_buffer_spec;
 		vertex_buffer_spec.dynamic = true;
 		vertex_buffer_spec.size = max_quad_vertices * sizeof(QuadVertex);
@@ -248,7 +250,7 @@ void main()
 		if (layout.getStride() != sizeof(QuadVertex))
 			SDL_Log("layout.stride != sizeof(QuadVertex)");
 
-		m_batch_data->quad_vertex_array = createVertexArrayBuilder()
+		m_batch_data->quad_vertex_array = quad_vao_builder
 			->addVertexBuffer(m_batch_data->quad_vertex_buffer, layout)
 			.setIndexBuffer(m_batch_data->quad_index_buffer)
 			.build();

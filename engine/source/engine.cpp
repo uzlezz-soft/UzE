@@ -33,7 +33,7 @@ namespace uze
 			return;
 		}
 
-		std::cout << SDL_GetPlatform() << "\n";
+		std::cout << "Platform: " << SDL_GetPlatform() << "\n";
 
 		RawShaderSpecification spec(R"(
 		precision mediump float;
@@ -77,11 +77,16 @@ namespace uze
 			2, 3, 0
 		};
 
+		auto vertex_array_builder = renderer->createVertexArrayBuilder();
 		{
 			BufferSpecification vertex_buffer_spec;
 			vertex_buffer_spec.data = vertices.data();
 			vertex_buffer_spec.size = static_cast<u32>(vertices.size() * sizeof(float));
 			vertex_buffer = renderer->createVertexBuffer(vertex_buffer_spec);
+
+			VertexLayout vertex_buffer_layout;
+			vertex_buffer_layout.push<float>(2);
+			vertex_array_builder->addVertexBuffer(vertex_buffer, vertex_buffer_layout);
 		}
 
 		{
@@ -89,20 +94,13 @@ namespace uze
 			index_buffer_spec.data = indices.data();
 			index_buffer_spec.size = static_cast<u32>(indices.size() * sizeof(u32));
 			index_buffer = renderer->createIndexBuffer(index_buffer_spec);
+			vertex_array_builder->setIndexBuffer(index_buffer);
 		}
+		vertex_array = vertex_array_builder->build();
 
-		{
-			VertexLayout vertex_buffer_layout;
-			vertex_buffer_layout.push<float>(2);
-
-			vertex_array = renderer->createVertexArrayBuilder()
-				->addVertexBuffer(vertex_buffer, vertex_buffer_layout)
-				.setIndexBuffer(index_buffer)
-				.build();
-
-			std::cout << "Frame took: 0ms";
-		}
-
+#if !defined(__EMSCRIPTEN__)
+		std::cout << "Frame took: 0ms";
+#endif
 		//Sound sound("C:/Users/User/Music/Soundpad/bigmak.wav");
 		//sound.Play();
 
@@ -112,7 +110,7 @@ namespace uze
 			gameLoop();
 		}
 #else
-		emscripten_set_main_loop(gameLoop, 0, 1);
+		emscripten_set_main_loop(gameLoop, -1, 1);
 #endif
 	}
 
@@ -132,14 +130,14 @@ namespace uze
 
 		renderer->beginFrame();
 		renderer->clear(1.f, 1.f, 1.f, 1.f);
-		renderer->bindShader(*shader);
-		//renderer->draw(*vertex_array);
 		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.0f, 0.5f, 0.3f, 1.0f));
 		renderer->drawQuad(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f, -0.2f, 0.0f)),
 			glm::vec4(0.2f, 0.5f, 0.5f, 1.0f));
 		renderer->endFrame();
 
+#if !defined(__EMSCRIPTEN__)
 		std::printf("\r                                                                                       \r");
+#endif
 		std::cout << "Frame took: " << renderer->getStatistics().frame_time_ms
 			<< "ms; draw calls: " << renderer->getStatistics().num_draw_calls
 			<< "; num quads: " << renderer->getStatistics().num_quads;

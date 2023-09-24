@@ -81,6 +81,7 @@ namespace uze
 			glDeleteVertexArrays(1, &m_handle);
 
 		glGenBuffers(1, &m_handle);
+		glBindVertexArray(m_handle);
 		m_attribute_index = 0;
 		m_vertex_buffers.clear();
 		m_index_buffer.reset();

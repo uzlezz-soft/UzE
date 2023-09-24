@@ -44,9 +44,9 @@ namespace uze
 	{
 		glGenBuffers(1, &m_handle);
 
-		glBindBuffer(GL_ARRAY_BUFFER, m_handle);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_handle);
 		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
-		glCheck(glBufferData(GL_ARRAY_BUFFER, spec.size, spec.data, m_usage));
+		glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, spec.size, spec.data, m_usage));
 		m_count = spec.size / 4;
 	}
 
@@ -58,9 +58,9 @@ namespace uze
 	void IndexBuffer::updateData(const u32* data, i64 size, i64 offset)
 	{
 		if (!isBound())
-			glBindBuffer(GL_ARRAY_BUFFER, m_handle);
+			bind();
 
-		glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
+		glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data));
 	}
 
 	void IndexBuffer::bind()

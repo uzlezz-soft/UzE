@@ -9,4 +9,9 @@ target_include_directories(Editor PRIVATE ${EDITOR_HEADERS})
 target_include_directories(Editor PRIVATE ${ENGINE_HEADERS})
 target_link_libraries(Editor Engine)
 
+if(EMSCRIPTEN)
+	target_link_options(Editor PRIVATE -sEXPORTED_FUNCTIONS=['_main']
+		-sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sFULL_ES3=1)
+endif()
+
 install(TARGETS Editor RUNTIME DESTINATION bin)
