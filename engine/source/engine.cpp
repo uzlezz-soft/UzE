@@ -1,8 +1,8 @@
 #include "uze/engine.h"
 #include "uze/renderer/renderer.h"
 #include "uze/renderer/shader.h"
+#include "renderer/opengl.h"
 #include <SDL3/SDL.h>
-#include <SDL3_mixer/SDL_mixer.h>
 #include <entt/entt.hpp>
 #include <iostream>
 
@@ -14,26 +14,6 @@
 
 namespace uze
 {
-
-	struct Sound
-	{
-		Mix_Chunk* Chunk;
-
-		Sound(std::string_view path)
-		{
-			Chunk = Mix_LoadWAV(path.data());
-		}
-
-		~Sound()
-		{
-			Mix_FreeChunk(Chunk);
-		}
-
-		void Play() const
-		{
-			Mix_PlayChannel(-1, Chunk, 0);
-		}
-	};
 
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<Shader> shader;
@@ -100,14 +80,14 @@ namespace uze
 		{
 			BufferSpecification vertex_buffer_spec;
 			vertex_buffer_spec.data = vertices.data();
-			vertex_buffer_spec.size = vertices.size() * sizeof(float);
+			vertex_buffer_spec.size = static_cast<u32>(vertices.size() * sizeof(float));
 			vertex_buffer = renderer->createVertexBuffer(vertex_buffer_spec);
 		}
 
 		{
 			BufferSpecification index_buffer_spec;
 			index_buffer_spec.data = indices.data();
-			index_buffer_spec.size = indices.size() * sizeof(u32);
+			index_buffer_spec.size = static_cast<u32>(indices.size() * sizeof(u32));
 			index_buffer = renderer->createIndexBuffer(index_buffer_spec);
 		}
 
@@ -154,8 +134,9 @@ namespace uze
 		renderer->clear(1.f, 1.f, 1.f, 1.f);
 		renderer->bindShader(*shader);
 		//renderer->draw(*vertex_array);
-		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
+		renderer->drawQuad(glm::mat4(1.0f), glm::vec4(0.0f, 0.5f, 0.3f, 1.0f));
+		renderer->drawQuad(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f, -0.2f, 0.0f)),
+			glm::vec4(0.2f, 0.5f, 0.5f, 1.0f));
 		renderer->endFrame();
 
 		std::printf("\r                                                                                       \r");

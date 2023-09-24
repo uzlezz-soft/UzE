@@ -1,13 +1,10 @@
 #include "uze/renderer/renderer.h"
+#include "opengl.h"
 
 #include <array>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-
-#include "glad/gles3.h"
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_video.h>
 
 #include "uze/renderer/vertex_array.h"
 
@@ -19,6 +16,26 @@
 
 namespace uze
 {
+
+	const char* openGLErrorToString(u32 err) noexcept
+	{
+		switch (err)
+		{
+		case GL_NO_ERROR: return "GL_NO_ERROR";
+
+		case GL_INVALID_ENUM: return "GL_INVALID_ENUM";
+
+		case GL_INVALID_VALUE: return "GL_INVALID_VALUE";
+
+		case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
+
+		case GL_OUT_OF_MEMORY: return "GL_OUT_OF_MEMORY";
+
+		case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+		}
+
+		return "NO_ERROR";
+	}
 
 	namespace
 	{
@@ -38,6 +55,7 @@ namespace uze
 				return false;
 			}
 
+#if !defined(__EMSCRIPTEN__)
 			if (!gladLoadGLES2(SDL_GL_GetProcAddress))
 			{
 				SDL_GL_DeleteContext(gl_context);
@@ -46,6 +64,7 @@ namespace uze
 				window = nullptr;
 				return false;
 			}
+#endif
 
 			return true;
 		}
@@ -341,6 +360,8 @@ void main()
 
 		u32 data_size = static_cast<u32>(reinterpret_cast<u8*>(m_batch_data->quad_vertices_ptr)
 			- reinterpret_cast<u8*>(m_batch_data->quad_vertices_base.get()));
+
+		m_batch_data->quad_vertex_buffer->updateData(m_batch_data->quad_vertices_base.get(), data_size, 0);
 
 		bindShader(*m_batch_data->quad_shader);
 		draw(*m_batch_data->quad_vertex_array, m_batch_data->quad_index_count);

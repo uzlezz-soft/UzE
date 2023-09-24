@@ -1,5 +1,5 @@
 #include "uze/renderer/buffer.h"
-#include "glad/gles3.h"
+#include "opengl.h"
 
 namespace uze
 {
@@ -13,7 +13,7 @@ namespace uze
 		bind();
 		m_size = spec.size;
 		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
-		glBufferData(GL_ARRAY_BUFFER, m_size, spec.data, m_usage);
+		glCheck(glBufferData(GL_ARRAY_BUFFER, m_size, spec.data, m_usage));
 	}
 
 	VertexBuffer::~VertexBuffer()
@@ -26,7 +26,7 @@ namespace uze
 		if (!isBound())
 			bind();
 
-		glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+		glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
 	}
 
 	void VertexBuffer::bind()
@@ -46,7 +46,7 @@ namespace uze
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_handle);
 		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
-		glBufferData(GL_ARRAY_BUFFER, spec.size, spec.data, m_usage);
+		glCheck(glBufferData(GL_ARRAY_BUFFER, spec.size, spec.data, m_usage));
 		m_count = spec.size / 4;
 	}
 
@@ -60,7 +60,7 @@ namespace uze
 		if (!isBound())
 			glBindBuffer(GL_ARRAY_BUFFER, m_handle);
 
-		glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+		glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
 	}
 
 	void IndexBuffer::bind()

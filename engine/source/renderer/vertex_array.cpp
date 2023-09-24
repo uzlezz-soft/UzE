@@ -1,5 +1,5 @@
 #include "uze/renderer/vertex_array.h"
-#include "glad/gles3.h"
+#include "opengl.h"
 
 namespace uze
 {

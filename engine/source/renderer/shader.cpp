@@ -1,6 +1,6 @@
 #include "uze/renderer/shader.h"
 #include "uze/renderer/renderer.h"
-#include "glad/gles3.h"
+#include "opengl.h"
 #include <sstream>
 
 namespace uze
@@ -17,8 +17,8 @@ namespace uze
 		ss << "#version " << renderer.getCapabilities().shading_language_version << "\n#line 1\n" << source;
 		auto src = ss.str();
 		const char* c_src = src.data();
-		glShaderSource(id, 1, &c_src, nullptr);
-		glCompileShader(id);
+		glCheck(glShaderSource(id, 1, &c_src, nullptr));
+		glCheck(glCompileShader(id));
 
 		i32 success = GL_FALSE;
 		glGetShaderiv(id, GL_COMPILE_STATUS, &success);
@@ -27,7 +27,7 @@ namespace uze
 
 		char info_log[1024];
 		glGetShaderInfoLog(id, sizeof(info_log), nullptr, info_log);
-		// TODO: Add logging
+		std::cout << "Cannot compile shader: " << info_log << "\n";
 		glDeleteShader(id);
 		return 0;
 	}
@@ -47,8 +47,8 @@ namespace uze
 			return;
 
 		u32 id = glCreateProgram();
-		glAttachShader(id, vert);
-		glAttachShader(id, frag);
+		glCheck(glAttachShader(id, vert));
+		glCheck(glAttachShader(id, frag));
 		glLinkProgram(id);
 
 		i32 success = GL_FALSE;
@@ -61,7 +61,7 @@ namespace uze
 
 		char info_log[1024];
 		glGetShaderInfoLog(id, sizeof(info_log), nullptr, info_log);
-		// TODO: Add logging
+		std::cout << "Cannot link shader: " << info_log << "\n";
 		glDeleteProgram(id);
 	}
 
