@@ -7,12 +7,14 @@
 
 namespace uze
 {
+	class Renderer;
 
 	struct VertexBufferElement final
 	{
 		u32 count;
 		u32 type;
 		bool normalized;
+		std::uintptr_t offset;
 	};
 
 	struct VertexLayout final
@@ -26,7 +28,7 @@ namespace uze
 		template <>
 		VertexLayout& push<float>(u32 count)
 		{
-			m_elements.push_back({ count, 0x1406, false });
+			m_elements.push_back({ count, 0x1406, false, m_stride });
 			m_stride += sizeof(float) * count;
 			return *this;
 		}
@@ -34,7 +36,7 @@ namespace uze
 		template <>
 		VertexLayout& push<i32>(u32 count)
 		{
-			m_elements.push_back({ count, 0x1404, false });
+			m_elements.push_back({ count, 0x1404, false, m_stride });
 			m_stride += sizeof(i32) * count;
 			return *this;
 		}
@@ -42,7 +44,7 @@ namespace uze
 		template <>
 		VertexLayout& push<u32>(u32 count)
 		{
-			m_elements.push_back({ count, 0x1405, false });
+			m_elements.push_back({ count, 0x1405, false, m_stride });
 			m_stride += sizeof(u32) * count;
 			return *this;
 		}
@@ -50,7 +52,7 @@ namespace uze
 		template <>
 		VertexLayout& push<u8>(u32 count)
 		{
-			m_elements.push_back({ count, 0x1401, true });
+			m_elements.push_back({ count, 0x1401, true, m_stride });
 			m_stride += sizeof(u8) * count;
 			return *this;
 		}
@@ -102,14 +104,15 @@ namespace uze
 		u32 m_handle{ 0 };
 		u32 m_usage{ 0 };
 		u32 m_size{ 0 };
+		Renderer& m_renderer;
 
-		VertexBuffer(const BufferSpecification& spec);
+		VertexBuffer(const BufferSpecification& spec, Renderer& renderer);
 
 		void bind();
 		bool isBound() const;
 
 		friend class Renderer;
-		friend class VertexArrayBuilder;
+		friend class VertexArray;
 	};
 
 	class IndexBuffer final : NonCopyable<IndexBuffer>
@@ -126,14 +129,15 @@ namespace uze
 		u32 m_handle{ 0 };
 		u32 m_usage{ 0 };
 		u32 m_count{ 0 };
+		Renderer& m_renderer;
 
-		IndexBuffer(const BufferSpecification& spec);
+		IndexBuffer(const BufferSpecification& spec, Renderer& renderer);
 
 		void bind();
 		bool isBound() const;
 
 		friend class Renderer;
-		friend class VertexArrayBuilder;
+		friend class VertexArray;
 
 	};
 

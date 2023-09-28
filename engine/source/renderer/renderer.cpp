@@ -14,8 +14,15 @@
 #include <emscripten.h>
 #endif
 
+#if defined(_WIN32)
+extern "C" __declspec(dllexport) uze::u32 NvOptimusEnablement = 0x00000001;
+extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+#endif
+
 namespace uze
 {
+
+	static constexpr LogCategory log_renderer { "Renderer" };
 
 	const char* openGLErrorToString(u32 err) noexcept
 	{
@@ -39,10 +46,16 @@ namespace uze
 
 	namespace
 	{
-		bool createGLESContext(i32 major, i32 minor, SDL_Window*& window, SDL_GLContext& gl_context)
+		bool createGLContext(i32 major, i32 minor, SDL_Window*& window, SDL_GLContext& gl_context)
 		{
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
+
+#if UZE_GL == UZE_OPENGL33
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#else
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#endif
 
 			window = SDL_CreateWindow("Uzlezz Engine Window", 1600, 900, SDL_WINDOW_OPENGL);
 			if (!window) return false;
@@ -55,8 +68,13 @@ namespace uze
 				return false;
 			}
 
-#if !defined(__EMSCRIPTEN__)
-			if (!gladLoadGLES2(SDL_GL_GetProcAddress))
+#if UZE_PLATFORM != UZE_PLATFORM_WEB
+#if UZE_GL == UZE_OPENGLES30
+			auto result__ = gladLoadGLES(SDL_GL_GetProcAddress);
+#else
+			auto result_ = gladLoadGL(SDL_GL_GetProcAddress);
+#endif
+			if (!result_)
 			{
 				SDL_GL_DeleteContext(gl_context);
 				SDL_DestroyWindow(window);
@@ -80,7 +98,6 @@ namespace uze
 	{
 		glm::vec4 position_tex_index_tiling;
 		glm::vec4 color;
-		glm::vec2 tex_coord;
 	};
 
 	struct BatchData
@@ -110,7 +127,6 @@ namespace uze
 		rendererFlags |= SDL_GL_CONTEXT_DEBUG_FLAG;
 #endif
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, rendererFlags);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -119,9 +135,15 @@ namespace uze
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-		if (!createGLESContext(3, 0, m_window, m_gl_context))
+#if UZE_GL == UZE_OPENGLES30
+		if (!createGLContext(3, 0, m_window, m_gl_context))
 			return;
+#else
+		if (!createGLContext(3, 3, m_window, m_gl_context))
+			return;
+#endif
 		SDL_GL_MakeCurrent(m_window, m_gl_context);
+
 
 		// Try to enable adaptive V-Sync
 		if (SDL_GL_SetSwapInterval(-1) != 0)
@@ -142,42 +164,51 @@ namespace uze
 		m_caps.gl_version_minor = minor;
 		{
 			std::stringstream ss;
-			ss << major << minor << "0 es";
+			ss << major << minor << "0";
+#if UZE_GL == UZE_OPENGLES30
+			ss << " es";
+#endif
 			m_caps.shading_language_version = ss.str();
 		}
 		m_caps.num_texture_units = num_texture_units;
 
 		m_batch_data = std::make_unique<BatchData>();
 
-		std::cout << std::setw(34) << std::left << "OpenGLES " << major << "." << minor << "\n";
-		std::cout << std::setw(34) << std::left << "OpenGL Shading Language Version: " << (char*)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-		std::cout << std::setw(34) << std::left << "OpenGL Vendor:" << (char*)glGetString(GL_VENDOR) << std::endl;
-		std::cout << std::setw(34) << std::left << "OpenGL Renderer:" << (char*)glGetString(GL_RENDERER) << std::endl;
-
-		std::cout << std::setw(34) << std::left << "Num of available texture units: " << num_texture_units << "\n";
+		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
+		uzLog(log_renderer, Info, "OpenGL ES: {}.{}", major, minor);
+		uzLog(log_renderer, Info, "Shading Language: {}", (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+		uzLog(log_renderer, Info, "Vendor: {}", (char*)glGetString(GL_VENDOR));
+		uzLog(log_renderer, Info, "Renderer: {}", (char*)glGetString(GL_RENDERER));
+		uzLog(log_renderer, Info, "Available texture units: {}", num_texture_units);
+		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
 
 		const auto default_vert_source = R"(
 precision mediump float;
 
 layout (location = 0) in vec4 a_position_tex_index_tiling;
 layout (location = 1) in vec4 a_color;
-layout (location = 2) in vec2 a_tex_coord;
 
 layout (std140) uniform CameraData
 {
 	mat4 view_projection;
 };
 
+out vec2 position;
 out vec4 color;
 out vec2 tex_coord;
 out float tex_index;
 out float tiling;
 
+const vec2 quad_tex_coords[4] = vec2[] (vec2(0, 1), vec2(0, 0), vec2(1, 0), vec2(1, 1));
+
 void main()
 {
-	gl_Position = /*view_projection **/ vec4(a_position_tex_index_tiling.xy, 0.0, 1.0);
+	int quad_vertex_index = gl_VertexID % 4;
+	tex_coord = quad_tex_coords[quad_vertex_index];
+	position = a_position_tex_index_tiling.xy;
+
+	gl_Position = /*view_projection **/ vec4(position, 0.0, 1.0);
 	color = a_color;
-	tex_coord = a_tex_coord;
 	tex_index = a_position_tex_index_tiling.z;
 	tiling = a_position_tex_index_tiling.w;
 }
@@ -189,6 +220,7 @@ precision highp float;
 
 out vec4 out_color;
 
+in vec2 position;
 in vec4 color;
 in vec2 tex_coord;
 in float tex_index;
@@ -215,7 +247,7 @@ void main()
 
 
 
-		auto quad_vao_builder = createVertexArrayBuilder();
+		m_batch_data->quad_vertex_array = createVertexArray();
 
 		BufferSpecification vertex_buffer_spec;
 		vertex_buffer_spec.dynamic = true;
@@ -246,14 +278,12 @@ void main()
 		delete[] quad_indices;
 
 		VertexLayout layout;
-		layout.push<glm::vec4>(1).push<glm::vec4>(1).push<glm::vec2>(1);
+		layout.push<glm::vec4>(1).push<glm::vec4>(1);
 		if (layout.getStride() != sizeof(QuadVertex))
-			SDL_Log("layout.stride != sizeof(QuadVertex)");
+			uzLog(log_renderer, Warn, "layout.stride != sizeof(QuadVertex)");
 
-		m_batch_data->quad_vertex_array = quad_vao_builder
-			->addVertexBuffer(m_batch_data->quad_vertex_buffer, layout)
-			.setIndexBuffer(m_batch_data->quad_index_buffer)
-			.build();
+		m_batch_data->quad_vertex_array->addVertexBuffer(m_batch_data->quad_vertex_buffer, layout);
+		m_batch_data->quad_vertex_array->setIndexBuffer(m_batch_data->quad_index_buffer);
 
 		m_batch_data->quad_vertex_positions[0] = glm::vec2(-0.5f, 0.5f);
 		m_batch_data->quad_vertex_positions[1] = glm::vec2(-0.5f, -0.5f);
@@ -303,7 +333,6 @@ void main()
 	void Renderer::draw(const VertexArray& vertex_array, i32 num_indices)
 	{
 		glBindVertexArray(vertex_array.m_handle);
-		vertex_array.getIndexBuffer()->bind();
 		glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
 		m_stats.num_draw_calls++;
 	}
@@ -313,8 +342,6 @@ void main()
 		if (m_batch_data->quad_index_count + quad_index_count >= max_quad_indices)
 			nextBatch();
 
-		static constexpr glm::vec2 texture_coords[] = { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f } };
-
 		for (u64 i = 0; i < quad_vertex_count; ++i)
 		{
 			const auto position = transform * glm::vec4(m_batch_data->quad_vertex_positions[i], 0.0f, 1.0f);
@@ -322,7 +349,6 @@ void main()
 			m_batch_data->quad_vertices_ptr->position_tex_index_tiling =
 				glm::vec4(position.x, position.y, 0.0f, 1.0f);
 			m_batch_data->quad_vertices_ptr->color = color;
-			m_batch_data->quad_vertices_ptr->tex_coord = texture_coords[i];
 			m_batch_data->quad_vertices_ptr++;
 		}
 
@@ -337,17 +363,22 @@ void main()
 
 	std::shared_ptr<VertexBuffer> Renderer::createVertexBuffer(const BufferSpecification& spec)
 	{
-		return std::shared_ptr<VertexBuffer>(new VertexBuffer(spec));
+		return std::shared_ptr<VertexBuffer>(new VertexBuffer(spec, *this));
 	}
 
 	std::shared_ptr<IndexBuffer> Renderer::createIndexBuffer(const BufferSpecification& spec)
 	{
-		return std::shared_ptr<IndexBuffer>(new IndexBuffer(spec));
+		return std::shared_ptr<IndexBuffer>(new IndexBuffer(spec, *this));
 	}
 
-	std::unique_ptr<VertexArrayBuilder> Renderer::createVertexArrayBuilder() const
+	std::shared_ptr<VertexArray> Renderer::createVertexArray() const
 	{
-		return std::unique_ptr<VertexArrayBuilder>(new VertexArrayBuilder());
+		return std::shared_ptr<VertexArray>(new VertexArray());
+	}
+
+	void Renderer::onDataTransfer(u64 amount)
+	{
+		m_stats.data_transmitted += amount;
 	}
 
 	void Renderer::startBatch()
@@ -360,14 +391,16 @@ void main()
 	{
 		if (!m_batch_data->quad_index_count) return;
 
-		u32 data_size = static_cast<u32>(reinterpret_cast<u8*>(m_batch_data->quad_vertices_ptr)
-			- reinterpret_cast<u8*>(m_batch_data->quad_vertices_base.get()));
+		u32 num_vertices = static_cast<u32>(static_cast<double>(m_batch_data->quad_index_count) / 1.5);
+		u32 data_size = num_vertices * sizeof(QuadVertex);
+		/*u32 data_size = static_cast<u32>(reinterpret_cast<u8*>(m_batch_data->quad_vertices_ptr)
+			- reinterpret_cast<u8*>(m_batch_data->quad_vertices_base.get()));*/
 
 		m_batch_data->quad_vertex_buffer->updateData(m_batch_data->quad_vertices_base.get(), data_size, 0);
 
 		bindShader(*m_batch_data->quad_shader);
-		draw(*m_batch_data->quad_vertex_array, m_batch_data->quad_index_count);
-		m_stats.num_vertices += data_size / sizeof(QuadVertex);
+		draw(*m_batch_data->quad_vertex_array, static_cast<i32>(m_batch_data->quad_index_count));
+		m_stats.num_vertices += num_vertices;
 	}
 
 	void Renderer::nextBatch()

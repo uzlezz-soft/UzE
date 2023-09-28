@@ -25,6 +25,7 @@ namespace uze
 		u32 num_vertices{ 0 };
 		u32 num_quads{ 0 };
 		u32 num_draw_calls{ 0 };
+		u64 data_transmitted { 0 };
 
 		void reset()
 		{
@@ -65,7 +66,9 @@ namespace uze
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
 		std::shared_ptr<VertexBuffer> createVertexBuffer(const BufferSpecification& spec);
 		std::shared_ptr<IndexBuffer> createIndexBuffer(const BufferSpecification& spec);
-		std::unique_ptr<VertexArrayBuilder> createVertexArrayBuilder() const;
+		std::shared_ptr<VertexArray> createVertexArray() const;
+
+		void onDataTransfer(u64 amount);
 
 	private:
 

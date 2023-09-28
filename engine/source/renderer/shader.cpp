@@ -6,6 +6,8 @@
 namespace uze
 {
 
+	static constexpr LogCategory log_shader { "Shader" };
+
 	RawShaderSpecification::RawShaderSpecification(std::string_view vertex_source_,
 		std::string_view fragment_source_)
 		: vertex_source(vertex_source_), fragment_source(fragment_source_) {}
@@ -27,7 +29,7 @@ namespace uze
 
 		char info_log[1024];
 		glGetShaderInfoLog(id, sizeof(info_log), nullptr, info_log);
-		std::cout << "Cannot compile shader: " << info_log << "\n";
+		uzLog(log_shader, Error, "Cannot compile shader: {}", info_log);
 		glDeleteShader(id);
 		return 0;
 	}
@@ -61,7 +63,7 @@ namespace uze
 
 		char info_log[1024];
 		glGetShaderInfoLog(id, sizeof(info_log), nullptr, info_log);
-		std::cout << "Cannot link shader: " << info_log << "\n";
+		uzLog(log_shader, Error, "Cannot link shader: {}", info_log);
 		glDeleteProgram(id);
 	}
 

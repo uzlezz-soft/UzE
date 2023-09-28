@@ -1,4 +1,5 @@
 #include "uze/renderer/buffer.h"
+#include "uze/renderer/renderer.h"
 #include "opengl.h"
 
 namespace uze
@@ -7,13 +8,16 @@ namespace uze
 	static u32 s_currently_bound_vertex_buffer{ 0 };
 	static u32 s_currently_bound_index_buffer{ 0 };
 
-	VertexBuffer::VertexBuffer(const BufferSpecification& spec)
+	VertexBuffer::VertexBuffer(const BufferSpecification& spec, Renderer& renderer)
+		: m_renderer(renderer)
 	{
 		glGenBuffers(1, &m_handle);
 		bind();
 		m_size = spec.size;
 		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 		glCheck(glBufferData(GL_ARRAY_BUFFER, m_size, spec.data, m_usage));
+		if (spec.data)
+			renderer.onDataTransfer(m_size);
 	}
 
 	VertexBuffer::~VertexBuffer()
@@ -27,6 +31,7 @@ namespace uze
 			bind();
 
 		glCheck(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
+		m_renderer.onDataTransfer(size);
 	}
 
 	void VertexBuffer::bind()
@@ -40,7 +45,8 @@ namespace uze
 		return s_currently_bound_vertex_buffer == m_handle;
 	}
 
-	IndexBuffer::IndexBuffer(const BufferSpecification& spec)
+	IndexBuffer::IndexBuffer(const BufferSpecification& spec, Renderer& renderer)
+		: m_renderer(renderer)
 	{
 		glGenBuffers(1, &m_handle);
 
@@ -48,6 +54,8 @@ namespace uze
 		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 		glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, spec.size, spec.data, m_usage));
 		m_count = spec.size / 4;
+		if (spec.data)
+			renderer.onDataTransfer(spec.size);
 	}
 
 	IndexBuffer::~IndexBuffer()
@@ -61,6 +69,7 @@ namespace uze
 			bind();
 
 		glCheck(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data));
+		m_renderer.onDataTransfer(size);
 	}
 
 	void IndexBuffer::bind()
