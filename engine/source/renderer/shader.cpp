@@ -8,6 +8,38 @@ namespace uze
 
 	static constexpr LogCategory log_shader { "Shader" };
 
+	static constexpr char* batch_vertex_shader = R"(
+precision mediump float;
+
+layout (location = 0) in vec4 a_position_tex_index_tiling;
+layout (location = 1) in vec4 a_color;
+
+layout (std140) uniform CameraData
+{
+	mat4 view_projection;
+};
+
+out vec2 position_;
+out vec4 color_;
+out vec2 tex_coord_;
+out float tex_index_;
+out float tiling_;
+
+const vec2 quad_tex_coords[4] = vec2[] (vec2(0, 1), vec2(0, 0), vec2(1, 0), vec2(1, 1));
+
+void main()
+{
+	int quad_vertex_index = gl_VertexID % 4;
+	tex_coord_ = quad_tex_coords[quad_vertex_index];
+	position_ = a_position_tex_index_tiling.xy;
+
+	gl_Position = /*view_projection **/ vec4(position_, 0.0, 1.0);
+	color_ = a_color;
+	tex_index_ = a_position_tex_index_tiling.z;
+	tiling_ = a_position_tex_index_tiling.w;
+}
+)";
+
 	RawShaderSpecification::RawShaderSpecification(std::string_view vertex_source_,
 		std::string_view fragment_source_)
 		: vertex_source(vertex_source_), fragment_source(fragment_source_) {}
@@ -65,6 +97,106 @@ namespace uze
 		glGetShaderInfoLog(id, sizeof(info_log), nullptr, info_log);
 		uzLog(log_shader, Error, "Cannot link shader: {}", info_log);
 		glDeleteProgram(id);
+	}
+
+	void DefaultShaderPreprocessor::preprocess(const Renderer& renderer, std::string_view shader, std::string& vertex, std::string& fragment)
+	{
+		/*static constexpr const char* fragment_source = R"(
+out vec4 color;
+
+in vec2 position_;
+in vec4 color_;
+in vec2 tex_coord_;
+in float tex_index_;
+in float tiling_;
+
+struct Input
+{
+	vec2 position;
+	vec4 color;
+	vec2 tex_coord;
+	int tex_index;
+	float tiling;
+};
+
+vec4 fragment(Input);
+
+void main()
+{
+	Input i;
+	i.position = position_;
+	i.color = color_;
+	i.tex_coord = tex_coord_;
+	i.tex_index = int(tex_index_);
+	i.tiling = tiling_;
+	
+	color = fragment(i);
+}
+)";*/
+
+		static std::string fragment_source;
+		if (fragment_source.empty())
+		{
+			std::stringstream ss;
+			ss << R"(
+out vec4 color;
+
+in vec2 position_;
+in vec4 color_;
+in vec2 tex_coord_;
+in float tex_index_;
+in float tiling_;
+
+uniform sampler2D u_textures[)";
+			ss << renderer.getCapabilities().num_texture_units << R"(];
+
+struct Input
+{
+	vec2 position;
+	vec4 color;
+	vec2 tex_coord;
+	int tex_index;
+	float tiling;
+};
+
+vec4 fragment(Input);
+
+void main()
+{
+	Input i;
+	i.position = position_;
+	i.color = color_;
+	i.tex_coord = tex_coord_;
+	i.tex_index = int(tex_index_);
+	i.tiling = tiling_;
+	
+	color = fragment(i);
+}
+
+vec4 sampleTexture(int tex_index, vec2 tex_coord)
+{
+	switch (tex_index)
+	{
+
+)";
+
+			for (u64 i = 0; i < renderer.getCapabilities().num_texture_units; ++i)
+			{
+				ss << "\t\tcase " << i << ": return texture(u_textures[" << i << "], tex_coord);\n";
+			}
+
+			ss << R"(	}
+	return vec4(0.0);
+}
+)";
+			fragment_source = ss.str();
+		}
+
+
+		vertex = batch_vertex_shader;
+		std::stringstream ss;
+		ss << fragment_source << shader;
+		fragment = ss.str();
 	}
 
 	Shader::~Shader()

@@ -34,6 +34,17 @@ namespace uze
 
 		uzLog(log_engine, Info, "Platform: {}", UZE_PLATFORM_STRING);
 
+		auto shader_source = R"(
+#shader_type	default
+
+vec4 fragment(Input input)
+{
+	return input.color * sampleTexture(input.tex_index, input.tex_coord * input.tiling);
+}
+)";
+
+		auto shader = renderer->createShader(shader_source);
+
 #if !defined(__EMSCRIPTEN__)
 		std::cout << "Frame took: 0ms";
 #endif

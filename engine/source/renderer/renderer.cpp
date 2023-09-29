@@ -175,75 +175,26 @@ namespace uze
 		m_batch_data = std::make_unique<BatchData>();
 
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
-		uzLog(log_renderer, Info, "OpenGL ES: {}.{}", major, minor);
+		uzLog(log_renderer, Info, "{}: {}.{}", UZE_GL_STRING, major, minor);
 		uzLog(log_renderer, Info, "Shading Language: {}", (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 		uzLog(log_renderer, Info, "Vendor: {}", (char*)glGetString(GL_VENDOR));
 		uzLog(log_renderer, Info, "Renderer: {}", (char*)glGetString(GL_RENDERER));
 		uzLog(log_renderer, Info, "Available texture units: {}", num_texture_units);
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
 
-		const auto default_vert_source = R"(
-precision mediump float;
+		registerShaderPreprocessor<DefaultShaderPreprocessor>();
 
-layout (location = 0) in vec4 a_position_tex_index_tiling;
-layout (location = 1) in vec4 a_color;
 
-layout (std140) uniform CameraData
+
+		constexpr std::string_view quad_shader = R"(
+#shader_type default
+
+vec4 fragment(Input input)
 {
-	mat4 view_projection;
-};
-
-out vec2 position;
-out vec4 color;
-out vec2 tex_coord;
-out float tex_index;
-out float tiling;
-
-const vec2 quad_tex_coords[4] = vec2[] (vec2(0, 1), vec2(0, 0), vec2(1, 0), vec2(1, 1));
-
-void main()
-{
-	int quad_vertex_index = gl_VertexID % 4;
-	tex_coord = quad_tex_coords[quad_vertex_index];
-	position = a_position_tex_index_tiling.xy;
-
-	gl_Position = /*view_projection **/ vec4(position, 0.0, 1.0);
-	color = a_color;
-	tex_index = a_position_tex_index_tiling.z;
-	tiling = a_position_tex_index_tiling.w;
+	return input.color;
 }
-		)";
-
-		std::stringstream frag_ss;
-		frag_ss << R"(
-precision highp float;
-
-out vec4 out_color;
-
-in vec2 position;
-in vec4 color;
-in vec2 tex_coord;
-in float tex_index;
-in float tiling;
-
-uniform sampler2D u_textures[)";
-		frag_ss << m_caps.num_texture_units;
-		frag_ss << R"(];
-void main()
-{
-	vec4 color_ = color;
-	switch (int(tex_index))
-	{
 )";
-		for (u32 i = 0; i < m_caps.num_texture_units; ++i)
-		{
-			frag_ss << "		case " << i << ": color_ *= texture(u_textures[" << i << "], tex_coord * tiling); break;\n";
-		}
-		frag_ss << "	}\n	out_color = color;\n}";
-
-		auto default_frag_src = frag_ss.str();
-		RawShaderSpecification spec(default_vert_source, default_frag_src);
-		m_batch_data->quad_shader = std::unique_ptr<Shader>(new Shader(spec, *this));
+		m_batch_data->quad_shader = createShader(quad_shader);
 
 
 
@@ -361,6 +312,47 @@ void main()
 		return std::shared_ptr<Shader>(new Shader(spec, *this));
 	}
 
+	std::shared_ptr<Shader> Renderer::createShader(std::string_view source)
+	{
+		constexpr std::string_view shader_type_directive = "#shader_type";
+
+		auto pos = source.find(shader_type_directive);
+		if (pos == std::string_view::npos)
+		{
+			uzLog(log_renderer, Error, "Cannot create shader from source: expected `#shader_type` directive");
+			return nullptr;
+		}
+		pos += shader_type_directive.size();
+
+		if (source[pos] != ' ' && source[pos] != '\t')
+		{
+			uzLog(log_renderer, Error, "Error near `#shader_type` directive");
+			return nullptr;
+		}
+		++pos;
+
+		while (source[pos] == ' ' || source[pos] == '\t')
+			++pos;
+
+		std::stringstream shader_type_ss;
+		while (source[pos] != '\n' && source[pos] != ' ' && source[pos] != '\t')
+			shader_type_ss << source[pos++];
+
+		const auto it = m_shader_preprocessors.find(shader_type_ss.str());
+		if (it == m_shader_preprocessors.end())
+		{
+			uzLog(log_renderer, Error, "Cannot find preprocessor for shader of type `{}`", shader_type_ss.str());
+			return nullptr;
+		}
+
+		std::string vertex;
+		std::string fragment;
+		it->second->preprocess(*this, std::string_view(source).substr(pos), vertex, fragment);
+
+		const RawShaderSpecification spec(vertex, fragment);
+		return createShader(spec);
+	}
+
 	std::shared_ptr<VertexBuffer> Renderer::createVertexBuffer(const BufferSpecification& spec)
 	{
 		return std::shared_ptr<VertexBuffer>(new VertexBuffer(spec, *this));
@@ -393,8 +385,6 @@ void main()
 
 		u32 num_vertices = static_cast<u32>(static_cast<double>(m_batch_data->quad_index_count) / 1.5);
 		u32 data_size = num_vertices * sizeof(QuadVertex);
-		/*u32 data_size = static_cast<u32>(reinterpret_cast<u8*>(m_batch_data->quad_vertices_ptr)
-			- reinterpret_cast<u8*>(m_batch_data->quad_vertices_base.get()));*/
 
 		m_batch_data->quad_vertex_buffer->updateData(m_batch_data->quad_vertices_base.get(), data_size, 0);
 
@@ -407,5 +397,19 @@ void main()
 	{
 		endBatch();
 		startBatch();
+	}
+
+	void Renderer::registerShaderPreprocessorImpl(std::unique_ptr<ShaderPreprocessor> pp)
+	{
+		auto type_name = pp->getTypeName();
+
+		if (m_shader_preprocessors.find(type_name.data()) != m_shader_preprocessors.end())
+		{
+			uzLog(log_renderer, Warn, "Shader preprocessor for `{}` shaders already registered");
+			return;
+		}
+
+		m_shader_preprocessors[type_name.data()] = std::move(pp);
+		uzLog(log_renderer, Info, "Registered shader preprocessor for `{}` shaders", type_name);
 	}
 }

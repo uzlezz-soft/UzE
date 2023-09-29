@@ -14,10 +14,12 @@
 #include <emscripten.h>
 
 #define UZE_GL UZE_OPENGLES30
+#define UZE_GL_STRING "OpenGL ES"
 #else
 #include "glad/gl33.h"
 
 #define UZE_GL UZE_OPENGL33
+#define UZE_GL_STRING "OpenGL"
 #endif
 
 #include <SDL3/SDL.h>

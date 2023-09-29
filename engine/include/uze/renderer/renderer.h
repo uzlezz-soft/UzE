@@ -4,6 +4,7 @@
 #include "uze/renderer/buffer.h"
 #include "uze/renderer/vertex_array.h"
 #include <string>
+#include <unordered_map>
 #include "glm/glm.hpp"
 
 struct SDL_Window;
@@ -64,11 +65,23 @@ namespace uze
 		void drawQuad(const glm::mat4& transform, const glm::vec4& color);
 
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
+		std::shared_ptr<Shader> createShader(std::string_view source);
 		std::shared_ptr<VertexBuffer> createVertexBuffer(const BufferSpecification& spec);
 		std::shared_ptr<IndexBuffer> createIndexBuffer(const BufferSpecification& spec);
 		std::shared_ptr<VertexArray> createVertexArray() const;
 
 		void onDataTransfer(u64 amount);
+
+		template <class T>
+		Renderer& registerShaderPreprocessor()
+		{
+			static_assert(std::is_base_of_v<ShaderPreprocessor, T>);
+
+			auto pp = std::make_unique<T>();
+			registerShaderPreprocessorImpl(std::move(pp));
+
+			return *this;
+		}
 
 	private:
 
@@ -79,10 +92,13 @@ namespace uze
 		RendererStatistics m_stats;
 
 		std::unique_ptr<BatchData> m_batch_data{ nullptr };
+		std::unordered_map<std::string, std::unique_ptr<ShaderPreprocessor>> m_shader_preprocessors;
 
 		void startBatch();
 		void endBatch();
 		void nextBatch();
+
+		void registerShaderPreprocessorImpl(std::unique_ptr<ShaderPreprocessor> pp);
 
 	};
 
