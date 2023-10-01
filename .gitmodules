@@ -16,3 +16,6 @@
 [submodule "third-party/glm"]
 	path = third-party/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "third-party/refl-cpp"]
+	path = third-party/refl-cpp
+	url = https://github.com/uzlezz-soft/refl-cpp

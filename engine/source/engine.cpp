@@ -12,6 +12,38 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+#include <refl.hpp>
+
+struct Serializable : refl::attr::usage::field {};
+
+template <class T>
+void serialize(std::ostream& os, T&& value)
+{
+	constexpr auto type = refl::reflect<T>();
+	os << type.name << ":\n";
+	for_each(refl::reflect(value).members, [&](auto member)
+	{
+		if constexpr (is_readable(member) && refl::descriptor::has_attribute<Serializable>(member))
+		{
+			os << get_display_name(member) << "=";
+			os << member(value) << "\n";
+		}
+	});
+}
+
+namespace uze
+{
+	struct Vec2
+	{
+		float x, y;
+	};
+}
+
+REFL_AUTO(
+	type(uze::Vec2),
+	field(x, Serializable{}),
+	field(y, Serializable{})
+)
 
 namespace uze
 {
@@ -34,16 +66,8 @@ namespace uze
 
 		uzLog(log_engine, Info, "Platform: {}", UZE_PLATFORM_STRING);
 
-		auto shader_source = R"(
-#shader_type	default
-
-vec4 fragment(Input input)
-{
-	return input.color * sampleTexture(input.tex_index, input.tex_coord * input.tiling);
-}
-)";
-
-		auto shader = renderer->createShader(shader_source);
+		Vec2 v2{ -1.5f, 2.0f };
+		serialize(getOutputStream(), v2);
 
 #if !defined(__EMSCRIPTEN__)
 		std::cout << "Frame took: 0ms";

@@ -9,6 +9,7 @@
 #include "uze/renderer/vertex_array.h"
 
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -42,6 +43,12 @@ namespace uze
 		}
 
 		return "NO_ERROR";
+	}
+
+	void logOpenGLError(u32 err, const char* file, u64 line)
+	{
+		uzLog(log_renderer, Error, "`{}`, line {}", std::filesystem::path(file).filename().generic_string(), line);
+		uzLog(log_renderer, Error, "OpenGL Error: {}", openGLErrorToString(err));
 	}
 
 	namespace
@@ -93,6 +100,11 @@ namespace uze
 	constexpr u64 max_quads_in_one_batch = 20000;
 	constexpr u64 max_quad_vertices = max_quads_in_one_batch * quad_vertex_count;
 	constexpr u64 max_quad_indices = max_quads_in_one_batch * quad_index_count;
+
+	struct SceneData
+	{
+		glm::mat4 view_projection;
+	};
 
 	struct QuadVertex
 	{
@@ -172,8 +184,6 @@ namespace uze
 		}
 		m_caps.num_texture_units = num_texture_units;
 
-		m_batch_data = std::make_unique<BatchData>();
-
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
 		uzLog(log_renderer, Info, "{}: {}.{}", UZE_GL_STRING, major, minor);
 		uzLog(log_renderer, Info, "Shading Language: {}", (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -181,6 +191,16 @@ namespace uze
 		uzLog(log_renderer, Info, "Renderer: {}", (char*)glGetString(GL_RENDERER));
 		uzLog(log_renderer, Info, "Available texture units: {}", num_texture_units);
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
+
+		m_scene_data = std::make_unique<SceneData>();
+		m_batch_data = std::make_unique<BatchData>();
+
+		UniformBufferSpecification scene_buffer_spec;
+		scene_buffer_spec.binding = 0;
+		scene_buffer_spec.name = "Scene";
+		scene_buffer_spec.dynamic = true;
+		scene_buffer_spec.size = sizeof(SceneData);
+		m_scene_buffer = createUniformBuffer(scene_buffer_spec);
 
 		registerShaderPreprocessor<DefaultShaderPreprocessor>();
 
@@ -259,6 +279,11 @@ vec4 fragment(Input input)
 	void Renderer::beginFrame()
 	{
 		m_stats.reset();
+
+		const float aspect = 1.6f / 0.9f;
+		m_scene_data->view_projection = glm::ortho(-3.0f * aspect, 3.0f * aspect, -3.0f, 3.0f);
+		m_scene_buffer->updateData(m_scene_data.get(), sizeof(SceneData));
+
 		startBatch();
 	}
 
@@ -309,7 +334,9 @@ vec4 fragment(Input input)
 
 	std::shared_ptr<Shader> Renderer::createShader(const ShaderSpecification& spec)
 	{
-		return std::shared_ptr<Shader>(new Shader(spec, *this));
+		auto shader = std::shared_ptr<Shader>(new Shader(spec, *this));
+		registerUniformBuffersForShader(*shader);
+		return shader;
 	}
 
 	std::shared_ptr<Shader> Renderer::createShader(std::string_view source)
@@ -363,6 +390,11 @@ vec4 fragment(Input input)
 		return std::shared_ptr<IndexBuffer>(new IndexBuffer(spec, *this));
 	}
 
+	std::shared_ptr<UniformBuffer> Renderer::createUniformBuffer(const UniformBufferSpecification& spec)
+	{
+		return std::shared_ptr<UniformBuffer>(new UniformBuffer(spec, *this));
+	}
+
 	std::shared_ptr<VertexArray> Renderer::createVertexArray() const
 	{
 		return std::shared_ptr<VertexArray>(new VertexArray());
@@ -371,6 +403,23 @@ vec4 fragment(Input input)
 	void Renderer::onDataTransfer(u64 amount)
 	{
 		m_stats.data_transmitted += amount;
+	}
+
+	void Renderer::registerUniformBuffer(UniformBuffer& buffer)
+	{
+		m_uniform_buffers.push_back(&buffer);
+	}
+
+	void Renderer::unregisterUniformBuffer(const UniformBuffer& buffer)
+	{
+		for (auto it = m_uniform_buffers.begin(); it != m_uniform_buffers.end(); ++it)
+		{
+			if (*it == &buffer)
+			{
+				m_uniform_buffers.erase(it);
+				break;
+			}
+		}
 	}
 
 	void Renderer::startBatch()
@@ -411,5 +460,14 @@ vec4 fragment(Input input)
 
 		m_shader_preprocessors[type_name.data()] = std::move(pp);
 		uzLog(log_renderer, Info, "Registered shader preprocessor for `{}` shaders", type_name);
+	}
+
+	void Renderer::registerUniformBuffersForShader(const Shader& shader)
+	{
+		for (auto& ub : m_uniform_buffers)
+		{
+			if (const u32 index = glGetUniformBlockIndex(shader.m_handle, ub->m_name.data()))
+				glUniformBlockBinding(shader.m_handle, index, ub->m_binding);
+		}
 	}
 }

@@ -32,6 +32,8 @@ namespace uze
 			: name(name_), min_level(min_level_) {}
 	};
 
+	static LogCategory log_debug { "Debug" };
+
 #define LOG_FN_ARGS std::string_view, std::string_view, u64
 	using LogFunction = void(*)(LOG_FN_ARGS);
 

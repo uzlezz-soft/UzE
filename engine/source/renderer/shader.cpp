@@ -14,7 +14,7 @@ precision mediump float;
 layout (location = 0) in vec4 a_position_tex_index_tiling;
 layout (location = 1) in vec4 a_color;
 
-layout (std140) uniform CameraData
+layout (std140) uniform Scene
 {
 	mat4 view_projection;
 };
@@ -33,7 +33,7 @@ void main()
 	tex_coord_ = quad_tex_coords[quad_vertex_index];
 	position_ = a_position_tex_index_tiling.xy;
 
-	gl_Position = /*view_projection **/ vec4(position_, 0.0, 1.0);
+	gl_Position = view_projection * vec4(position_, 0.0, 1.0);
 	color_ = a_color;
 	tex_index_ = a_position_tex_index_tiling.z;
 	tiling_ = a_position_tex_index_tiling.w;
@@ -101,39 +101,6 @@ void main()
 
 	void DefaultShaderPreprocessor::preprocess(const Renderer& renderer, std::string_view shader, std::string& vertex, std::string& fragment)
 	{
-		/*static constexpr const char* fragment_source = R"(
-out vec4 color;
-
-in vec2 position_;
-in vec4 color_;
-in vec2 tex_coord_;
-in float tex_index_;
-in float tiling_;
-
-struct Input
-{
-	vec2 position;
-	vec4 color;
-	vec2 tex_coord;
-	int tex_index;
-	float tiling;
-};
-
-vec4 fragment(Input);
-
-void main()
-{
-	Input i;
-	i.position = position_;
-	i.color = color_;
-	i.tex_coord = tex_coord_;
-	i.tex_index = int(tex_index_);
-	i.tiling = tiling_;
-	
-	color = fragment(i);
-}
-)";*/
-
 		static std::string fragment_source;
 		if (fragment_source.empty())
 		{

@@ -29,6 +29,7 @@ namespace uze
 {
 
 	const char* openGLErrorToString(u32 err) noexcept;
+	void logOpenGLError(u32 err, const char* file, u64 line);
 
 }
 
@@ -38,6 +39,5 @@ namespace uze
 		x; \
 		auto gl__error = glGetError(); \
 		if (gl__error != 0) \
-			std::cout << "OpenGLDebug: File " << std::filesystem::path(__FILE__).filename() \
-			<< ", line " << __LINE__ << ":  " << ::uze::openGLErrorToString(gl__error) << "\n"; \
+			::uze::logOpenGLError(gl__error, __FILE__, __LINE__); \
 	} while (0)

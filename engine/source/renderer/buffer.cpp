@@ -7,6 +7,7 @@ namespace uze
 
 	static u32 s_currently_bound_vertex_buffer{ 0 };
 	static u32 s_currently_bound_index_buffer{ 0 };
+	static u32 s_currently_bound_uniform_buffer{ 0 };
 
 	VertexBuffer::VertexBuffer(const BufferSpecification& spec, Renderer& renderer)
 		: m_renderer(renderer)
@@ -83,4 +84,45 @@ namespace uze
 		return s_currently_bound_index_buffer == m_handle;
 	}
 
+	UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec, Renderer& renderer)
+		: m_renderer(renderer), m_name(spec.name), m_binding(spec.binding)
+	{
+		glGenBuffers(1, &m_handle);
+		bind();
+		m_size = spec.size;
+		m_usage = spec.dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
+		glCheck(glBufferData(GL_UNIFORM_BUFFER, m_size, spec.data, m_usage));
+
+		if (spec.data)
+			renderer.onDataTransfer(m_size);
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, m_binding, m_handle);
+		renderer.registerUniformBuffer(*this);
+	}
+
+	void UniformBuffer::bind()
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, m_handle);
+		s_currently_bound_uniform_buffer = m_handle;
+	}
+
+	bool UniformBuffer::isBound() const
+	{
+		return s_currently_bound_uniform_buffer == m_handle;
+	}
+
+	void UniformBuffer::updateData(const void* data, i64 size, i64 offset)
+	{
+		if (!isBound())
+			bind();
+
+		glCheck(glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data));
+		m_renderer.onDataTransfer(size);
+	}
+
+	UniformBuffer::~UniformBuffer()
+	{
+		m_renderer.unregisterUniformBuffer(*this);
+		glDeleteBuffers(1, &m_handle);
+	}
 }

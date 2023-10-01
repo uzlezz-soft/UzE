@@ -82,7 +82,7 @@ namespace uze
 		u32 m_stride{ 0 };
 	};
 
-	struct BufferSpecification final
+	struct BufferSpecification
 	{
 		bool dynamic = false;
 		u32 size{ 0 };
@@ -138,6 +138,38 @@ namespace uze
 
 		friend class Renderer;
 		friend class VertexArray;
+
+	};
+
+	struct UniformBufferSpecification : public BufferSpecification
+	{
+		std::string name;
+		u32 binding{ 0 };
+	};
+
+	class UniformBuffer final : NonCopyable<UniformBuffer>
+	{
+	public:
+
+		~UniformBuffer();
+
+		void updateData(const void* data, i64 size, i64 offset = 0);
+
+	private:
+
+		u32 m_handle{ 0 };
+		u32 m_usage{ 0 };
+		u32 m_size{ 0 };
+		Renderer& m_renderer;
+		std::string m_name;
+		u32 m_binding{ 0 };
+
+		UniformBuffer(const UniformBufferSpecification& spec, Renderer& renderer);
+
+		void bind();
+		bool isBound() const;
+
+		friend class Renderer;
 
 	};
 

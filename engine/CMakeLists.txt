@@ -13,6 +13,9 @@ target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third-p
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/glm")
 target_include_directories(Engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/uzlezz_language/third-party/fmt/include")
 
+get_property(REFL_CPP_HEADERS GLOBAL PROPERTY REFL_CPP_HEADERS_PROPERTY)
+target_include_directories(Engine PUBLIC ${REFL_CPP_HEADERS})
+
 target_link_libraries(Engine PRIVATE SDL3::SDL3)
 target_link_libraries(Engine PUBLIC EnTT::EnTT)
 #target_link_libraries(Engine PRIVATE UzlezzLanguage)

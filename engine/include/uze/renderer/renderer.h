@@ -41,6 +41,7 @@ namespace uze
 		friend class Renderer;
 	};
 
+	struct SceneData;
 	struct BatchData;
 	class Renderer final : NonCopyable<Renderer>
 	{
@@ -68,9 +69,13 @@ namespace uze
 		std::shared_ptr<Shader> createShader(std::string_view source);
 		std::shared_ptr<VertexBuffer> createVertexBuffer(const BufferSpecification& spec);
 		std::shared_ptr<IndexBuffer> createIndexBuffer(const BufferSpecification& spec);
+		std::shared_ptr<UniformBuffer> createUniformBuffer(const UniformBufferSpecification& spec);
 		std::shared_ptr<VertexArray> createVertexArray() const;
 
 		void onDataTransfer(u64 amount);
+
+		void registerUniformBuffer(UniformBuffer& buffer);
+		void unregisterUniformBuffer(const UniformBuffer& buffer);
 
 		template <class T>
 		Renderer& registerShaderPreprocessor()
@@ -91,14 +96,20 @@ namespace uze
 		RenderingCapabilities m_caps;
 		RendererStatistics m_stats;
 
+		std::unique_ptr<SceneData> m_scene_data{ nullptr };
 		std::unique_ptr<BatchData> m_batch_data{ nullptr };
 		std::unordered_map<std::string, std::unique_ptr<ShaderPreprocessor>> m_shader_preprocessors;
+
+		std::shared_ptr<UniformBuffer> m_scene_buffer{ nullptr };
+
+		std::vector<UniformBuffer*> m_uniform_buffers;
 
 		void startBatch();
 		void endBatch();
 		void nextBatch();
 
 		void registerShaderPreprocessorImpl(std::unique_ptr<ShaderPreprocessor> pp);
+		void registerUniformBuffersForShader(const Shader& shader);
 
 	};
 
