@@ -67,6 +67,10 @@ namespace uze
 			window = SDL_CreateWindow("Uzlezz Engine Window", 1600, 900, SDL_WINDOW_OPENGL);
 			if (!window) return false;
 
+#if UZE_PLATFORM == UZE_PLATFORM_WEB
+			SDL_MaximizeWindow(window);
+#endif
+
 			gl_context = SDL_GL_CreateContext(window);
 			if (!gl_context)
 			{
@@ -209,12 +213,17 @@ namespace uze
 		constexpr std::string_view quad_shader = R"(
 #shader_type default
 
-vec4 fragment(Input input)
+vec4 fragment(Input i)
 {
-	return input.color;
+	return i.color;
 }
 )";
 		m_batch_data->quad_shader = createShader(quad_shader);
+		if (!m_batch_data->quad_shader->isValid())
+		{
+			uzLog(log_renderer, Error, "Cannot compile default quad batch shader. Aborting...");
+			std::exit(EXIT_FAILURE);
+		}
 
 
 
@@ -280,7 +289,11 @@ vec4 fragment(Input input)
 	{
 		m_stats.reset();
 
-		const float aspect = 1.6f / 0.9f;
+		int w, h;
+		SDL_GetWindowSize(m_window, &w, &h);
+		glViewport(0, 0, w, h);
+
+		const float aspect = static_cast<float>(w) / static_cast<float>(h);
 		m_scene_data->view_projection = glm::ortho(-3.0f * aspect, 3.0f * aspect, -3.0f, 3.0f);
 		m_scene_buffer->updateData(m_scene_data.get(), sizeof(SceneData));
 

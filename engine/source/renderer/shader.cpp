@@ -106,6 +106,7 @@ void main()
 		{
 			std::stringstream ss;
 			ss << R"(
+precision highp float;
 out vec4 color;
 
 in vec2 position_;
@@ -130,14 +131,14 @@ vec4 fragment(Input);
 
 void main()
 {
-	Input i;
-	i.position = position_;
-	i.color = color_;
-	i.tex_coord = tex_coord_;
-	i.tex_index = int(tex_index_);
-	i.tiling = tiling_;
+	Input fsi;
+	fsi.position = position_;
+	fsi.color = color_;
+	fsi.tex_coord = tex_coord_;
+	fsi.tex_index = int(tex_index_);
+	fsi.tiling = tiling_;
 	
-	color = fragment(i);
+	color = fragment(fsi);
 }
 
 vec4 sampleTexture(int tex_index, vec2 tex_coord)

@@ -7,7 +7,7 @@
 namespace uze
 {
 
-	struct ShaderSpecification
+	struct UZE ShaderSpecification
 	{
 		virtual std::string_view getVertexSource() const = 0;
 		virtual std::string_view getFragmentSource() const = 0;
@@ -15,7 +15,7 @@ namespace uze
 		virtual ~ShaderSpecification() = default;
 	};
 
-	struct RawShaderSpecification final : ShaderSpecification
+	struct UZE RawShaderSpecification final : ShaderSpecification
 	{
 		std::string_view vertex_source;
 		std::string_view fragment_source;
@@ -27,7 +27,7 @@ namespace uze
 	};
 
 	class Renderer;
-	class ShaderPreprocessor
+	class UZE ShaderPreprocessor
 	{
 	public:
 
@@ -46,7 +46,7 @@ namespace uze
 		std::string m_type_name;
 	};
 
-	class DefaultShaderPreprocessor : public ShaderPreprocessor
+	class UZE DefaultShaderPreprocessor : public ShaderPreprocessor
 	{
 	public:
 
@@ -56,7 +56,7 @@ namespace uze
 
 	};
 
-	class Shader final : NonCopyable<Shader>
+	class UZE Shader final : NonCopyable<Shader>
 	{
 	public:
 

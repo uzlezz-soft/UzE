@@ -9,7 +9,7 @@ namespace uze
 {
 	class Renderer;
 
-	struct VertexBufferElement final
+	struct UZE VertexBufferElement final
 	{
 		u32 count;
 		u32 type;
@@ -17,7 +17,7 @@ namespace uze
 		std::uintptr_t offset;
 	};
 
-	struct VertexLayout final
+	struct UZE VertexLayout final
 	{
 		template <class T>
 		VertexLayout& push(u32 count)
@@ -82,14 +82,14 @@ namespace uze
 		u32 m_stride{ 0 };
 	};
 
-	struct BufferSpecification
+	struct UZE BufferSpecification
 	{
 		bool dynamic = false;
 		u32 size{ 0 };
 		void* data{ nullptr };
 	};
 
-	class VertexBuffer final : NonCopyable<VertexBuffer>
+	class UZE VertexBuffer final : NonCopyable<VertexBuffer>
 	{
 	public:
 
@@ -115,7 +115,7 @@ namespace uze
 		friend class VertexArray;
 	};
 
-	class IndexBuffer final : NonCopyable<IndexBuffer>
+	class UZE IndexBuffer final : NonCopyable<IndexBuffer>
 	{
 	public:
 
@@ -141,13 +141,13 @@ namespace uze
 
 	};
 
-	struct UniformBufferSpecification : public BufferSpecification
+	struct UZE UniformBufferSpecification : public BufferSpecification
 	{
 		std::string name;
 		u32 binding{ 0 };
 	};
 
-	class UniformBuffer final : NonCopyable<UniformBuffer>
+	class UZE UniformBuffer final : NonCopyable<UniformBuffer>
 	{
 	public:
 

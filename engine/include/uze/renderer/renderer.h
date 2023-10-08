@@ -12,7 +12,7 @@ struct SDL_Window;
 namespace uze
 {
 
-	struct RenderingCapabilities final
+	struct UZE RenderingCapabilities final
 	{
 		u32 gl_version_major;
 		u32 gl_version_minor;
@@ -20,7 +20,7 @@ namespace uze
 		u32 num_texture_units;
 	};
 
-	struct RendererStatistics final
+	struct UZE RendererStatistics final
 	{
 		double frame_time_ms{ 0.0 };
 		u32 num_vertices{ 0 };
@@ -43,7 +43,7 @@ namespace uze
 
 	struct SceneData;
 	struct BatchData;
-	class Renderer final : NonCopyable<Renderer>
+	class UZE Renderer final : NonCopyable<Renderer>
 	{
 	public:
 

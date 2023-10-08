@@ -5,7 +5,7 @@
 namespace uze
 {
 
-	class VertexArray final : NonCopyable<VertexArray>
+	class UZE VertexArray final : NonCopyable<VertexArray>
 	{
 	public:
 

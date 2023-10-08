@@ -18,7 +18,7 @@ namespace uze
 		NonCopyable() = default;
 	};
 
-	struct AtScopeExit final : public NonCopyable<AtScopeExit>
+	struct UZE AtScopeExit final : public NonCopyable<AtScopeExit>
 	{
 		std::function<void()> m_func;
 
@@ -27,7 +27,7 @@ namespace uze
 		~AtScopeExit() { m_func(); }
 	};
 
-	struct Stopwatch final
+	struct UZE Stopwatch final
 	{
 		Stopwatch() { reset(); }
 
@@ -45,3 +45,8 @@ namespace uze
 	};
 
 }
+
+#define UZE_EXPAND(x) x
+
+#define UZE_CONCAT_IMPL(a, b) a##b
+#define UZE_CONCAT(a, b) UZE_CONCAT_IMPL(a, b)

@@ -5,12 +5,16 @@ add_executable(Editor "source/entry_point.cpp")
 
 set(EDITOR_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/source)
 
+add_definitions(-DUZE_EXPORT_DLL)
+
 target_include_directories(Editor PRIVATE ${EDITOR_HEADERS})
 target_include_directories(Editor PRIVATE ${ENGINE_HEADERS})
 target_include_directories(Editor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third-party/uzlezz_language/third-party/fmt/include")
 
 target_link_libraries(Editor Engine)
 target_link_libraries(Editor fmt)
+
+add_dependencies(Editor Engine)
 
 if(EMSCRIPTEN)
 	target_link_options(Editor PRIVATE -sEXPORTED_FUNCTIONS=['_main']
