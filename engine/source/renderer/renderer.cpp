@@ -3,7 +3,6 @@
 
 #include <array>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include "uze/renderer/vertex_array.h"
@@ -11,12 +10,14 @@
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
+#include "glm/ext/matrix_transform.hpp"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
 #if defined(_WIN32)
-extern "C" __declspec(dllexport) uze::u32 NvOptimusEnablement = 0x00000001;
+extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif
 
@@ -29,20 +30,19 @@ namespace uze
 	{
 		switch (err)
 		{
-		case GL_NO_ERROR: return "GL_NO_ERROR";
+			default:
+			case GL_NO_ERROR: return "GL_NO_ERROR";
 
-		case GL_INVALID_ENUM: return "GL_INVALID_ENUM";
+			case GL_INVALID_ENUM: return "GL_INVALID_ENUM";
 
-		case GL_INVALID_VALUE: return "GL_INVALID_VALUE";
+			case GL_INVALID_VALUE: return "GL_INVALID_VALUE";
 
-		case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
+			case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
 
-		case GL_OUT_OF_MEMORY: return "GL_OUT_OF_MEMORY";
+			case GL_OUT_OF_MEMORY: return "GL_OUT_OF_MEMORY";
 
-		case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+			case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
 		}
-
-		return "NO_ERROR";
 	}
 
 	void logOpenGLError(u32 err, const char* file, u64 line)
@@ -81,9 +81,9 @@ namespace uze
 
 #if UZE_PLATFORM != UZE_PLATFORM_WEB
 #if UZE_GL == UZE_OPENGLES30
-			auto result__ = gladLoadGLES(SDL_GL_GetProcAddress);
+			const auto result__ = gladLoadGLES(SDL_GL_GetProcAddress);
 #else
-			auto result_ = gladLoadGL(SDL_GL_GetProcAddress);
+			const auto result_ = gladLoadGL(SDL_GL_GetProcAddress);
 #endif
 			if (!result_)
 			{
@@ -108,6 +108,7 @@ namespace uze
 	struct SceneData
 	{
 		glm::mat4 view_projection;
+		float time;
 	};
 
 	struct QuadVertex
@@ -167,8 +168,6 @@ namespace uze
 			// Enable standard V-Sync
 			SDL_GL_SetSwapInterval(1);
 
-		m_valid = true;
-
 		i32 num_texture_units = 0;
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &num_texture_units);
 
@@ -190,9 +189,12 @@ namespace uze
 
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
 		uzLog(log_renderer, Info, "{}: {}.{}", UZE_GL_STRING, major, minor);
-		uzLog(log_renderer, Info, "Shading Language: {}", (char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
-		uzLog(log_renderer, Info, "Vendor: {}", (char*)glGetString(GL_VENDOR));
-		uzLog(log_renderer, Info, "Renderer: {}", (char*)glGetString(GL_RENDERER));
+		uzLog(log_renderer, Info, "Shading Language: {}",
+			reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+		uzLog(log_renderer, Info, "Vendor: {}",
+			reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
+		uzLog(log_renderer, Info, "Renderer: {}",
+			reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
 		uzLog(log_renderer, Info, "Available texture units: {}", num_texture_units);
 		uzLog(log_renderer, Info, "########################### RENDERER INFO ###########################");
 
@@ -221,8 +223,8 @@ vec4 fragment(Input i)
 		m_batch_data->quad_shader = createShader(quad_shader);
 		if (!m_batch_data->quad_shader->isValid())
 		{
-			uzLog(log_renderer, Error, "Cannot compile default quad batch shader. Aborting...");
-			std::exit(EXIT_FAILURE);
+			uzLog(log_renderer, Error, "Cannot compile default quad batch shader.");
+			return;
 		}
 
 
@@ -269,6 +271,8 @@ vec4 fragment(Input i)
 		m_batch_data->quad_vertex_positions[1] = glm::vec2(-0.5f, -0.5f);
 		m_batch_data->quad_vertex_positions[2] = glm::vec2(0.5f, -0.5f);
 		m_batch_data->quad_vertex_positions[3] = glm::vec2(0.5f, 0.5f);
+
+		m_valid = true;
 	}
 
 	Renderer::~Renderer()
@@ -295,6 +299,7 @@ vec4 fragment(Input i)
 
 		const float aspect = static_cast<float>(w) / static_cast<float>(h);
 		m_scene_data->view_projection = glm::ortho(-3.0f * aspect, 3.0f * aspect, -3.0f, 3.0f);
+		m_scene_data->time = static_cast<float>(m_sw.getElapsedSeconds());
 		m_scene_buffer->updateData(m_scene_data.get(), sizeof(SceneData));
 
 		startBatch();
@@ -324,6 +329,11 @@ vec4 fragment(Input i)
 		glBindVertexArray(vertex_array.m_handle);
 		glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
 		m_stats.num_draw_calls++;
+	}
+
+	void Renderer::drawQuad(glm::vec2 position, const glm::vec4& color)
+	{
+		drawQuad(glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.0f)), color);
 	}
 
 	void Renderer::drawQuad(const glm::mat4& transform, const glm::vec4& color)

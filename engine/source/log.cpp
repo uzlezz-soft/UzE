@@ -12,6 +12,7 @@ namespace uze
 
 	void initLogging(std::ostream& out)
 	{
+		std::ostream::sync_with_stdio(false);
 		out_stream = &out;
 	}
 

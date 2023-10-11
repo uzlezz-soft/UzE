@@ -16,7 +16,7 @@ namespace uze
 	{
 		u32 gl_version_major;
 		u32 gl_version_minor;
-		std::string shading_language_version = "100 es";
+		std::string shading_language_version;
 		u32 num_texture_units;
 	};
 
@@ -63,6 +63,8 @@ namespace uze
 		void bindShader(const Shader& shader);
 		void draw(const VertexArray& vertex_array);
 		void draw(const VertexArray& vertex_array, i32 num_indices);
+
+		void drawQuad(glm::vec2 position, const glm::vec4& color);
 		void drawQuad(const glm::mat4& transform, const glm::vec4& color);
 
 		std::shared_ptr<Shader> createShader(const ShaderSpecification& spec);
@@ -95,6 +97,8 @@ namespace uze
 		bool m_valid{ false };
 		RenderingCapabilities m_caps;
 		RendererStatistics m_stats;
+
+		Stopwatch m_sw;
 
 		std::unique_ptr<SceneData> m_scene_data{ nullptr };
 		std::unique_ptr<BatchData> m_batch_data{ nullptr };

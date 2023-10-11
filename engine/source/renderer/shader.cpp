@@ -3,6 +3,12 @@
 #include "opengl.h"
 #include <sstream>
 
+#if UZE_PLATFORM == UZE_PLATFORM_WEB
+#define PLATFORM_NEEDS_GAMMA_CORRECTION 1
+#else
+#define PLATFORM_NEEDS_GAMMA_CORRECTION 0
+#endif
+
 namespace uze
 {
 
@@ -128,6 +134,7 @@ struct Input
 };
 
 vec4 fragment(Input);
+vec4 platformFixColor(vec4 c);
 
 void main()
 {
@@ -138,7 +145,7 @@ void main()
 	fsi.tex_index = int(tex_index_);
 	fsi.tiling = tiling_;
 	
-	color = fragment(fsi);
+	color = platformFixColor(fragment(fsi));
 }
 
 vec4 sampleTexture(int tex_index, vec2 tex_coord)
@@ -156,7 +163,16 @@ vec4 sampleTexture(int tex_index, vec2 tex_coord)
 			ss << R"(	}
 	return vec4(0.0);
 }
+
+vec4 platformFixColor(vec4 c)
+{
 )";
+#if PLATFORM_NEEDS_GAMMA_CORRECTION == 1
+			ss << "\treturn vec4(pow(c.r, 0.45), pow(c.g, 0.45), pow(c.b, 0.45), c.a);\n";
+#else
+			ss << "\treturn c;\n";
+#endif
+			ss << "}\n";
 			fragment_source = ss.str();
 		}
 

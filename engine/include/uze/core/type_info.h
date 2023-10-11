@@ -1,9 +1,17 @@
 #pragma once
 
-#include "uze/common.h"
+#include "uze/core/serialize_deserialize.h"
 #include <refl.hpp>
-#include <unordered_map>
 #include <functional>
+
+#if defined(UZE_REFLECTION_GENERATOR) && UZE_REFLECTION_GENERATOR == 1
+#define uzclass class [[clang::annotate("uze_reflect")]]
+#define serialize_field [[clang::annotate("uze_serialize")]] 
+#else
+#define uzclass class
+#define serialize_field
+#endif
+
 
 namespace uze
 {
@@ -61,6 +69,51 @@ REFL_AUTO(type(uze::Object));
 		static Z_register UZE_CONCAT(type_register, __COUNTER__){}; \
 	}
 
+
+
+/*...*/
+
+uzclass EntityTest
+{
+public:
+
+	serialize_field std::string name;
+	serialize_field uze::i32 health;
+	serialize_field float x;
+	serialize_field float y;
+	serialize_field std::vector<uze::i8> indices;
+
+};
+
+/*...*/
+
+template<>
+struct BinarySerializer<EntityTest>
+{
+	void operator()(std::ostream& o, const EntityTest& obj) const
+	{
+		BinarySerializer<decltype(obj.name)>{}(o, obj.name);
+		BinarySerializer<decltype(obj.health)>{}(o, obj.health);
+		BinarySerializer<decltype(obj.x)>{}(o, obj.x);
+		BinarySerializer<decltype(obj.y)>{}(o, obj.y);
+		BinarySerializer<decltype(obj.indices)>{}(o, obj.indices);
+	}
+};
+
+template <>
+struct BinaryDeserializer<EntityTest>
+{
+	void operator()(std::istream& i, EntityTest& obj) const
+	{
+		BinaryDeserializer<decltype(obj.name)>{}(i, obj.name);
+		BinaryDeserializer<decltype(obj.health)>{}(i, obj.health);
+		BinaryDeserializer<decltype(obj.x)>{}(i, obj.x);
+		BinaryDeserializer<decltype(obj.y)>{}(i, obj.y);
+		BinaryDeserializer<decltype(obj.indices)>{}(i, obj.indices);
+	}
+};
+
+/*...*/
 
 namespace uze
 {

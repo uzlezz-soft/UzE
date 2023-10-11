@@ -21,3 +21,14 @@
 #else
 #error "Unknows platform"
 #endif
+
+
+#if defined(UZE_DEBUG)
+#define UZE_CONFIG_STRING "Debug"
+#elif defined(UZE_RELEASE)
+#define UZE_CONFIG_STRING "Release"
+#elif defined(UZE_SHIPPING)
+#define UZE_CONFIG_STRING "Shipping"
+#else
+#define UZE_CONFIG_STRING "Unknown configuration"
+#endif

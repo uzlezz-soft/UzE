@@ -3,7 +3,7 @@
 namespace uze
 {
 
-	Random::Random() : Random(std::_Random_device())
+	Random::Random() : Random(std::random_device()())
 	{
 	}
 

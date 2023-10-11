@@ -9,6 +9,7 @@
 #include <SDL3/SDL.h>
 #include <entt/entt.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "glm/ext/matrix_transform.hpp"
 
@@ -18,48 +19,16 @@
 #include <refl.hpp>
 #include <thread>
 
-
-struct Serializable : refl::attr::usage::field {};
-
-template <class T>
-void serialize(std::ostream& os, T&& value)
-{
-	constexpr auto type = refl::reflect<T>();
-	os << type.name << ":\n";
-	for_each(refl::reflect(value).members, [&](auto member)
-	{
-		if constexpr (is_readable(member) && refl::descriptor::has_attribute<Serializable>(member))
-		{
-			os << get_display_name(member) << "=";
-			os << member(value) << "\n";
-		}
-	});
-}
-
-namespace uze
-{
-	struct Vec2
-	{
-		float x, y;
-	};
-}
-
-REFL_AUTO(
-	type(uze::Vec2),
-	field(x, Serializable{}),
-	field(y, Serializable{})
-)
-
 namespace uze
 {
 
-	class Entity : Object
+	uzclass Entity : Object
 	{
 		UZE_OBJECT(Entity)
 
 	public:
 
-		float health{ 0.0f };
+		serialize_field float health{ 0.0f };
 
 	};
 
@@ -104,19 +73,50 @@ namespace uze
 		renderer = std::make_unique<Renderer>();
 		if (!renderer->isValid())
 		{
-			std::cerr << "Cannot init renderer\n";
+			uzLog(log_engine, Error, "Cannot init renderer");
 			return;
 		}
 
-		uzLog(log_engine, Info, "Platform: {}", UZE_PLATFORM_STRING);
+		uzLog(log_engine, Info, "Platform: {}, Config: {}", UZE_PLATFORM_STRING, UZE_CONFIG_STRING);
+
+		if (std::ifstream in("input.txt"); in.is_open())
+		{
+			uzLog(log_engine, Debug, "Opened `{}/input.txt!`", std::filesystem::current_path().generic_string());
+			in.close();
+		}
+		else
+		{
+			uzLog(log_engine, Debug, "Cannot open file `{}/input.txt`", std::filesystem::current_path().generic_string());
+		}
 
 		Registry::init();
 		//Registry::registerType<Object>();
 		//Registry::registerType<Entity>();
 		job_system::init();
 
-		Vec2 v2{ -1.5f, 2.0f };
-		serialize(getOutputStream(), v2);
+		{
+			EntityTest et;
+			et.name = "Entity Test";
+			et.health = 100;
+			et.x = 2.0f;
+			et.y = -1.5f;
+
+			for (u64 i = 0; i < 10; ++i)
+			{
+				et.indices.push_back(i);
+			}
+
+			std::ofstream out("input.txt", std::ios::binary);
+
+			BinarySerializer<decltype(et)>{}(out, et);
+			uzLog(log_engine, Debug, "Serialized EntityTest to input.txt");
+		}
+
+		{
+			EntityTest et2;
+			std::ifstream in("input.txt", std::ios::binary);
+			BinaryDeserializer<decltype(et2)>{}(in, et2);
+		}
 
 		Random random;
 		float radius = 5.0f;
@@ -140,7 +140,7 @@ namespace uze
 		}
 
 #if !defined(__EMSCRIPTEN__)
-		std::cout << "Frame took: 0ms";
+		std::cout << "Frame time: 0ms";
 #endif
 
 #if !defined(__EMSCRIPTEN__)
@@ -153,7 +153,6 @@ namespace uze
 #endif
 	}
 
-	glm::vec3 quad2_position{-0.5f, -0.2f, 0.0f};
 	static std::unordered_map<SDL_Keycode, bool> s_press_states;
 
 	static Stopwatch sw;
@@ -229,19 +228,21 @@ namespace uze
 			const auto& tc = registry.get<TransformComponent>(e);
 			const auto& sprite = registry.get<SpriteRendererComponent>(e);
 
-			const auto transform = glm::translate(glm::mat4(1.0f), glm::vec3(tc.position, 0.0f));
-			renderer->drawQuad(transform, sprite.color);
+			renderer->drawQuad(tc.position, sprite.color);
 		}
 
 		renderer->endFrame();
 
-#if !defined(__EMSCRIPTEN__)
-		std::printf("\r                                                                                       \r");
+#if UZE_PLATFORM != UZE_PLATFORM_WEB
+		std::cout << "\r                                                                                       \r";
 #endif
-		std::cout << "Frame took: " << renderer->getStatistics().frame_time_ms
+		std::cout << "Frame time: " << renderer->getStatistics().frame_time_ms
 			<< "ms; draw calls: " << renderer->getStatistics().num_draw_calls
 			<< "; num quads: " << renderer->getStatistics().num_quads << "; PCIe: "
 			<< renderer->getStatistics().data_transmitted << " bytes";
+#if UZE_PLATFORM == UZE_PLATFORM_WEB
+		std::cout << "\n";
+#endif
 	}
 	
 }
